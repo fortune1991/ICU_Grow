@@ -1,0 +1,72 @@
+import urequests
+import utime
+import time
+import ujson
+
+def get_location(timeout=10):
+    while True:
+        response = None
+        try:
+            # Ping location API with Timeout
+            start_time = utime.ticks_ms()
+            response = urequests.get("http://ip-api.com/json/")
+            
+            
+            # Timeout check
+            elapsed = utime.ticks_diff(utime.ticks_ms(), start_time)
+            if elapsed > timeout * 1000:
+                raise Exception(f"Timeout after {timeout}s (took {elapsed/1000:.1f}s)")
+            
+            # Check HTTP status
+            if response.status_code != 200:
+                raise Exception(f"HTTP {response.status_code}")
+            
+            data = response.json()
+
+            # Make sure keys exist before returning
+            if "lat" in data and "lon" in data:
+                return data["lat"], data["lon"]
+
+        except Exception as e:
+            print("Location request failed:", e)
+            
+        finally:
+            if response:
+                response.close()
+
+        # Wait a bit before retrying, otherwise it hammers the API
+        time.sleep(5)
+        return
+
+
+def get_timezone(timeout=10):
+    while True:
+        response = None
+        try:
+            #Ping Timezone API with Timeout
+            start_time = utime.ticks_ms()
+            response = urequests.get("http://ip-api.com/json/")
+            
+            # Timeout check
+            elapsed = utime.ticks_diff(utime.ticks_ms(), start_time)
+            if elapsed > timeout * 1000:
+                raise Exception(f"Timeout after {timeout}s (took {elapsed/1000:.1f}s)")
+            
+            # Check HTTP status
+            if response.status_code != 200:
+                raise Exception(f"HTTP {response.status_code}")
+            
+            data = response.json()
+
+            if "timezone" in data:
+                return data["timezone"]
+
+        except Exception as e:
+            print("Timezone request failed:", e)
+            
+        finally:
+            if response:
+                response.close()
+
+        time.sleep(5)
+        return
