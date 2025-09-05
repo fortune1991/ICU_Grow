@@ -31,7 +31,7 @@ def actuator_logic(
         else:
             new_roof_open = prev_roof
 
-        # If temp still rising and roof is fully open, use fan
+        # If temp still rising and roof is fully open, use fan. If temp > 35, always use fan
         if (prev_temp is not None and temp_celc >= prev_temp and prev_roof == 100) or temp_celc > 35:
             new_fan_on = True
         else:
@@ -59,7 +59,7 @@ def actuator_logic(
     elif rh < rh_setpoint_low and not new_heat_pad_on:
         new_fan_on = False
 
-    # --- NEW NIGHT-TIME OVERRIDE ---
+    # Night time override
     if is_night:
         new_roof_open = 0
         new_fan_on = False
