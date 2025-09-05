@@ -1,1 +1,12 @@
-conifg.json
+# Secret configuration files
+config.json
+config*.json
+secrets.json
+*.key
+
+# Thonny/MicroPython temporary files
+__pycache__/
+*.pyc
+*.log
+*.csv
+last_id.txt
