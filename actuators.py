@@ -31,8 +31,8 @@ def actuator_logic(
         else:
             new_roof_open = prev_roof
 
-        # If temp still rising and roof is fully open, use fan. If temp > 35, always use fan
-        if (prev_temp is not None and temp_celc >= prev_temp and prev_roof == 100) or temp_celc > 35:
+        # If temp still rising and roof is fully open, use fan. 
+        if prev_temp is not None and temp_celc >= prev_temp and prev_roof == 100:
             new_fan_on = True
         else:
             new_fan_on = False
@@ -63,6 +63,10 @@ def actuator_logic(
     if is_night:
         new_roof_open = 0
         new_fan_on = False
+        
+    # Absolute safety override: if very hot, always fan on
+    if temp_celc > 35:
+    new_fan_on = True
 
     # Apply changes to actuator states
     if (
