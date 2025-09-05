@@ -15,14 +15,15 @@ def api_url_gen(latitude, longitude, timezone):
         f"&timezone={timezone}"
     )
 
-def get_weather_data(api_url, retries=3, delay=2, timeout=10):
+def get_weather_data(api_url, timeout=10):
     """
-    Fetches weather data from the API with retries.
+    Fetches weather data from the API (single attempt).
+    Returns data on success, None on failure.
     """    
     response = None
     try:
-        print(f"Calling Weather API")
-        system_log(f"Calling Weather API")
+        print(f"Calling Weather API: {api_url}")
+        system_log("Calling Weather API")
         
         # Ping weather data API with timeout
         start_time = utime.ticks_ms()
@@ -31,7 +32,7 @@ def get_weather_data(api_url, retries=3, delay=2, timeout=10):
         # Timeout check
         elapsed = utime.ticks_diff(utime.ticks_ms(), start_time)
         if elapsed > timeout * 1000:
-            raise Exception(f"Timeout after {timeout}s)")
+            raise Exception(f"Timeout after {timeout}s")
         
         # Check HTTP status
         if response.status_code != 200:
@@ -41,13 +42,13 @@ def get_weather_data(api_url, retries=3, delay=2, timeout=10):
         return data
         
     except Exception as e:
-        return e
+        print(f"Weather API error: {e}")
+        system_log(f"Weather API error: {e}")
+        return None  
         
     finally:
         if response:
             response.close()
-    
-    return None
 
 def get_sunrise_hour(data):
     sunrise = data['daily']['sunrise'][1].split("T")
