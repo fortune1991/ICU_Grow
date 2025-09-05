@@ -22,7 +22,7 @@ def get_weather_data(api_url, timeout=10):
     """    
     response = None
     try:
-        print(f"Calling Weather API: {api_url}")
+        print(f"Calling Weather API")
         system_log("Calling Weather API")
         
         # Ping weather data API with timeout
