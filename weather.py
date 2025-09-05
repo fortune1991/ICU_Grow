@@ -15,7 +15,7 @@ def api_url_gen(latitude, longitude, timezone):
         f"&timezone={timezone}"
     )
 
-def get_weather_data(api_url, timeout=10):
+def get_weather_data(api_url):
     """
     Fetches weather data from the API (single attempt).
     Returns data on success, None on failure.
@@ -26,13 +26,7 @@ def get_weather_data(api_url, timeout=10):
         system_log("Calling Weather API")
         
         # Ping weather data API with timeout
-        start_time = utime.ticks_ms()
-        response = urequests.get(api_url)
-        
-        # Timeout check
-        elapsed = utime.ticks_diff(utime.ticks_ms(), start_time)
-        if elapsed > timeout * 1000:
-            raise Exception(f"Timeout after {timeout}s")
+        response = urequests.get(api_url,timeout=5)
         
         # Check HTTP status
         if response.status_code != 200:

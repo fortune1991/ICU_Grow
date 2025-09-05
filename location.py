@@ -3,19 +3,12 @@ import utime
 import time
 import ujson
 
-def get_location(timeout=10):
+def get_location():
     while True:
         response = None
         try:
             # Ping location API with Timeout
-            start_time = utime.ticks_ms()
-            response = urequests.get("http://ip-api.com/json/")
-            
-            
-            # Timeout check
-            elapsed = utime.ticks_diff(utime.ticks_ms(), start_time)
-            if elapsed > timeout * 1000:
-                raise Exception(f"Timeout after {timeout}s (took {elapsed/1000:.1f}s)")
+            response = urequests.get("http://ip-api.com/json/",timeout=5)
             
             # Check HTTP status
             if response.status_code != 200:
@@ -39,18 +32,12 @@ def get_location(timeout=10):
         return
 
 
-def get_timezone(timeout=10):
+def get_timezone():
     while True:
         response = None
         try:
             #Ping Timezone API with Timeout
-            start_time = utime.ticks_ms()
-            response = urequests.get("http://ip-api.com/json/")
-            
-            # Timeout check
-            elapsed = utime.ticks_diff(utime.ticks_ms(), start_time)
-            if elapsed > timeout * 1000:
-                raise Exception(f"Timeout after {timeout}s (took {elapsed/1000:.1f}s)")
+            response = urequests.get("http://ip-api.com/json/",timeout=5)
             
             # Check HTTP status
             if response.status_code != 200:

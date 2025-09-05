@@ -1,6 +1,7 @@
 import urequests
 import ujson
 import time
+from logging import system_log
 
 # Global variables to track alerts
 last_high_temp_alert_time = 0

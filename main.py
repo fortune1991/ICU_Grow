@@ -24,7 +24,6 @@ from utils import get_local_time, load_config, seconds_until
 # Module-level defaults
 
 record_interval = None
-weather_clock_message_interval = None
 
 roof_open = 0
 fan_on = False
@@ -196,7 +195,7 @@ async def main():
         weather_check(),
         temperature_alert(temp_alert, goodnight),
         goodnight_routine(goodnight),
-        clock_sync(weather_clock_message_interval),
+        clock_sync(),
         cover_check(),  # NEW task for continuous cover/night detection
         wifi_watch(SSID, PASSWORD),
     )
@@ -391,7 +390,7 @@ async def cover_check():
         await asyncio.sleep(30)  # adjust frequency as needed
 
 
-async def clock_sync(weather_clock_message_interval):
+async def clock_sync():
     # Sleep until 3am next day
     seconds_until_3am = seconds_until(3)
     await asyncio.sleep(seconds_until_3am)
@@ -410,7 +409,8 @@ async def clock_sync(weather_clock_message_interval):
             print("Clock sync failed:", e)
             system_log(f"Clock sync failed: {e}")
 
-        await asyncio.sleep(weather_clock_message_interval)
+        seconds_until_3am = seconds_until(3)
+        await asyncio.sleep(seconds_until_3am)
         
 async def wifi_watch(ssid, password, check_interval=10):
     """

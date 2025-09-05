@@ -39,20 +39,15 @@ def load_update_id():
     except:
         return 0
 
-async def get_local_time(timezone, retries=2, delay=2, timeout=10):
+async def get_local_time(timezone, retries=2, delay=2):
     """
     Async MicroPython version: fetches local time with fallback methods
     """
     response = None
     for attempt in range(1, retries + 1):
         try:
-            # Get time from World Time API
-            start_time = utime.ticks_ms()
-            response = urequests.get(f"http://worldtimeapi.org/api/timezone/{timezone}")
-            # Timeout exception
-            if utime.ticks_diff(utime.ticks_ms(), start_time) > timeout * 1000:
-                response.close()
-                raise Exception(f"API timeout after {timeout} seconds")
+            # Get time from World Time API with timeout
+            response = urequests.get(f"http://worldtimeapi.org/api/timezone/{timezone}",timeout=5)
             
             data = ujson.loads(response.text)
             
