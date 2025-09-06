@@ -50,6 +50,12 @@ def get_sunrise_hour(data):
     sunrise_hour = sunrise_time[:2]
     return sunrise_hour
 
+def get_sunrise_time(data):
+    sunrise = data['daily']['sunrise'][1].split("T")
+    sunrise_time = sunrise[1]
+    sunrise_min_hour = sunrise_time[:5]
+    return sunrise_min_hour
+
 def get_sunset_time(data):
     """
     Returns the sunset time as a timestamp in the same local time

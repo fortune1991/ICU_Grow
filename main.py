@@ -12,6 +12,7 @@ from sensors import sensor
 from weather import (
     get_weather_data,
     get_sunrise_hour,
+    get_sunrise_time,
     get_sunset_time,
     get_temperature_at_hour,
     weather_message,
@@ -148,11 +149,12 @@ async def main():
                 
                 if data is not None:
                     sunrise_hour = get_sunrise_hour(data)
+                    sunrise_time = get_sunrise_time(data)
                     temp_at_sunrise = get_temperature_at_hour(data, sunrise_hour)
                     
                     if temp_at_sunrise is not None:
-                        print(f"Weather data acquired. Temperature at sunrise ({sunrise_hour}:00) is {temp_at_sunrise}°C on {date}")
-                        system_log(f"Weather data acquired. Temperature at sunrise ({sunrise_hour}:00) is {temp_at_sunrise}°C on {date}")
+                        print(f"Weather data acquired. Sunrise is at {sunrise_time} on {date}. Temperature at sunrise is {temp_at_sunrise}°C")
+                        system_log(f"Weather data acquired. Sunrise is at {sunrise_time} on {date}. Temperature at sunrise is {temp_at_sunrise}°C")
                         
                         # Send weather message
                         weather_message(15, temp_at_sunrise)
@@ -306,11 +308,12 @@ async def weather_check():
         
         if data is not None:
             sunrise_hour = get_sunrise_hour(data)
+            sunrise_time = get_sunrise_time(data)
             temp_at_sunrise = get_temperature_at_hour(data, sunrise_hour)
             
             if temp_at_sunrise is not None:
-                print(f"Weather data acquired. Temperature at sunrise ({sunrise_hour}:00) is {temp_at_sunrise}°C on {date}")
-                system_log(f"Weather data acquired. Temperature at sunrise ({sunrise_hour}:00) is {temp_at_sunrise}°C on {date}")
+                print(f"Weather data acquired. Sunrise is at {sunrise_time} on {date}. Temperature at sunrise is {temp_at_sunrise}°C")
+                system_log(f"Weather data acquired. Sunrise is at {sunrise_time} on {date}. Temperature at sunrise is {temp_at_sunrise}°C")
                 
                 # Send weather message
                 weather_message(15, temp_at_sunrise)
