@@ -161,7 +161,7 @@ async def main():
                         sunset_time = get_sunset_time(data)
                         sunset_struct = utime.localtime(sunset_time)
                         # Extract components
-                        year, month, day, hour, minute, second, weekday, yearday = local_struct
+                        year, month, day, hour, minute, second, weekday, yearday = sunset_struct
                         system_log(f"Sunset time is {hour}:{minute} on {date}")
                         break
                     
@@ -319,7 +319,7 @@ async def weather_check():
                 sunset_time = get_sunset_time(data)
                 sunset_struct = utime.localtime(sunset_time)
                 # Extract components
-                year, month, day, hour, minute, second, weekday, yearday = local_struct
+                year, month, day, hour, minute, second, weekday, yearday = sunset_struct
                 system_log(f"Sunset time is {hour}:{minute} on {date}")
                 
                 # Sleep until 3am next day
