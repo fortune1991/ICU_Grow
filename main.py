@@ -156,11 +156,12 @@ async def main():
                         
                         # Send weather message
                         weather_message(15, temp_at_sunrise)
-                        break
                     
                         # Update sunset time variable
                         sunset_time = get_sunset_time(data)
                         system_log(f"Sunset time is: {sunset_time} on {date}")
+                        
+                        break
                     
             except Exception as e:
                 print(f"Attempt {attempt+1} to get weather data failed: {e}")
