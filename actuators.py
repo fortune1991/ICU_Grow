@@ -16,48 +16,51 @@ def actuator_logic(
     rh,
     is_night
 ):
+    # Start with current states
     new_roof_open = roof_open
     new_fan_on = fan_on
     new_heat_pad_on = heat_pad_on
 
-    # 1. Night override
+    # 1. Temperature control
+    if temp_celc > temp_setpoint_high:
+        new_heat_pad_on = False
+        new_roof_open = min(100, prev_roof + 25)
+
+    elif temp_celc < temp_setpoint_low:
+        new_roof_open = max(0, prev_roof - 25)
+        new_fan_on = False
+        new_heat_pad_on = True if new_roof_open == 0 else False
+
+    else:  # in comfort range
+        new_heat_pad_on = False
+        new_fan_on = False
+
+    # 2. Humidity control (only active in comfort zone and if not heating)
+    if (
+        temp_setpoint_low <= temp_celc <= temp_setpoint_high
+        and not new_heat_pad_on
+    ):
+        if prev_rh is not None and rh > rh_setpoint_high and rh > prev_rh:
+            new_fan_on = True
+        elif rh < rh_setpoint_low:
+            new_fan_on = False
+
+    # 3. Fan assist if roof maxed
+    if temp_celc > temp_setpoint_high + 2 and new_roof_open == 100:
+        new_fan_on = True
+
+    # 4. Extreme heat override
+    if temp_celc > 35:
+        new_fan_on = True
+
+    # 5. Night override (always last, with 1 °C heating deadband)
     if is_night:
         new_roof_open = 0
         new_fan_on = False
-        new_heat_pad_on = temp_celc < temp_setpoint_low
-    else:
-        # 2. Too hot
-        if temp_celc > temp_setpoint_high:
+        if temp_celc < (temp_setpoint_low - 1):
+            new_heat_pad_on = True
+        elif temp_celc > temp_setpoint_low:
             new_heat_pad_on = False
-            new_roof_open = min(100, prev_roof + 25)
-
-            if prev_temp is not None and temp_celc >= prev_temp and prev_roof == 100:
-                new_fan_on = True
-            else:
-                new_fan_on = False
-
-        # 3. Too cold
-        elif temp_celc < temp_setpoint_low:
-            new_roof_open = max(0, prev_roof - 25)
-            new_fan_on = False
-            new_heat_pad_on = True if new_roof_open == 0 else False
-
-        # 4. Comfort zone
-        else:
-            new_heat_pad_on = False
-            new_fan_on = False
-            # roof stays as is
-
-        # 5. Humidity control
-        if (
-            prev_rh is not None
-            and rh > rh_setpoint_high
-            and rh > prev_rh
-            and not new_heat_pad_on
-        ):
-            new_fan_on = True
-        elif rh < rh_setpoint_low and not new_heat_pad_on:
-            new_fan_on = False
 
     # Apply changes
     if (
@@ -70,6 +73,7 @@ def actuator_logic(
         heat_pad_on = new_heat_pad_on
         prev_roof = roof_open
 
+    # Update memory
     prev_temp = temp_celc
     prev_rh = rh
     last_change_time = time.localtime()
