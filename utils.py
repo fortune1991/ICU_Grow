@@ -87,5 +87,3 @@ async def get_local_time(timezone, retries=2, delay=2):
         finally:
             if response:
                 response.close()
-    
-                    

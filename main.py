@@ -1,5 +1,3 @@
-# Create async to recconect to Wi-Fi if dropped out
-
 import uasyncio as asyncio
 import network
 import time
@@ -145,14 +143,16 @@ async def main():
             try:
                 api_url = api_url_gen(latitude, longitude, timezone)
                 data = get_weather_data(api_url)
+                year, month, day, *_ = rtc.datetime()
+                date = "{:04d}-{:02d}-{:02d}".format(year, month, day)
                 
                 if data is not None:
                     sunrise_hour = get_sunrise_hour(data)
                     temp_at_sunrise = get_temperature_at_hour(data, sunrise_hour)
                     
                     if temp_at_sunrise is not None:
-                        print(f"Weather data acquired. Temperature at sunrise ({sunrise_hour}:00) is {temp_at_sunrise}°C")
-                        system_log(f"Weather data acquired. Temperature at sunrise ({sunrise_hour}:00) is {temp_at_sunrise}°C")
+                        print(f"Weather data acquired. Temperature at sunrise ({sunrise_hour}:00) is {temp_at_sunrise}°C on {date}")
+                        system_log(f"Weather data acquired. Temperature at sunrise ({sunrise_hour}:00) is {temp_at_sunrise}°C on {date}")
                         
                         # Send weather message
                         weather_message(15, temp_at_sunrise)
@@ -160,6 +160,7 @@ async def main():
                     
                         # Update sunset time variable
                         sunset_time = get_sunset_time(data)
+                        system_log(f"Sunset time is: {sunset_time} on {date}")
                     
             except Exception as e:
                 print(f"Attempt {attempt+1} to get weather data failed: {e}")
@@ -196,7 +197,7 @@ async def main():
         temperature_alert(temp_alert, goodnight),
         goodnight_routine(goodnight),
         clock_sync(),
-        cover_check(),  # NEW task for continuous cover/night detection
+        cover_check(),
         wifi_watch(SSID, PASSWORD),
     )
 
@@ -206,7 +207,7 @@ async def sensor_log(record_interval, csv_complete, actuator_update):
         for _ in range(5):
             try:
                 temp_celc, rh, temp_celc_outside, lux = sensor()
-                log(temp_celc, rh, temp_celc_outside, lux, roof_open, fan_on, heat_pad_on, cover_on)
+                log(temp_celc, rh, temp_celc_outside, lux, roof_open, fan_on, heat_pad_on, cover_on, is_night)
             except Exception as e:
                 print("Sensor log error:", e)
                 system_log(f"Sensor log error: {e}")
@@ -297,20 +298,23 @@ async def weather_check():
     while True:
         api_url = api_url_gen(latitude, longitude, timezone)
         data = get_weather_data(api_url)
+        year, month, day, *_ = rtc.datetime()
+        date = "{:04d}-{:02d}-{:02d}".format(year, month, day)
         
         if data is not None:
             sunrise_hour = get_sunrise_hour(data)
             temp_at_sunrise = get_temperature_at_hour(data, sunrise_hour)
             
             if temp_at_sunrise is not None:
-                print(f"Weather data acquired. Temperature at sunrise ({sunrise_hour}:00) is {temp_at_sunrise}°C")
-                system_log(f"Weather data acquired. Temperature at sunrise ({sunrise_hour}:00) is {temp_at_sunrise}°C")
+                print(f"Weather data acquired. Temperature at sunrise ({sunrise_hour}:00) is {temp_at_sunrise}°C on {date}")
+                system_log(f"Weather data acquired. Temperature at sunrise ({sunrise_hour}:00) is {temp_at_sunrise}°C on {date}")
                 
                 # Send weather message
                 weather_message(15, temp_at_sunrise)
                 
                 # Update sunset time variable
                 sunset_time = get_sunset_time(data)
+                system_log(f"Sunset time is: {sunset_time} on {date}")
                 
                 # Sleep until 3am next day
                 seconds_until_3am = seconds_until(3)
@@ -377,11 +381,9 @@ async def cover_check():
         new_cover_on = (dark and not new_is_night)
 
         if new_is_night != prev_is_night:
-            system_log(f"is_night changed: {new_is_night}")
             prev_is_night = new_is_night
 
         if new_cover_on != prev_cover_on:
-            system_log(f"cover_on changed: {new_cover_on}")
             prev_cover_on = new_cover_on
 
         is_night = new_is_night
