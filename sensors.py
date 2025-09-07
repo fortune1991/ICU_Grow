@@ -47,7 +47,7 @@ def get_lux(ltr, no_reads=3, delay=0.1):
     reading = ltr.get_reading()
     if reading is not None:
         return reading[BreakoutLTR559.LUX]
-    return None
+    return float("inf")
 
 def get_temp(bme, no_reads=3, delay=0.1):
     """
