@@ -7,6 +7,7 @@ from actuators import actuator_logic
 from alerts import high_temp_alert, goodnight_message
 from location import get_location, get_timezone
 from logging import log, system_log
+from motors import motor_1_forward, motor_1_backward, motor_2_forward, motor_2_backward
 from screen import screen
 from sensors import sensor
 from weather import (
@@ -289,6 +290,20 @@ async def actuators(actuator_update, temp_alert):
                 fan_on = False
                 system_log("Cover detected: forced roof closed and fan off")
 
+        # ACTUATIONS START BELOW
+        
+        # Roof
+        if roof_open > prev_roof:
+            system_log("Actuating motor forward")
+            motor_1_forward(2)
+        elif roof_open < prev_roof:
+            system_log("Actuating motor backward")
+            motor_1_backward(2)
+            
+        # Fan
+        
+        # Heat
+        
         print(f"roof open: {roof_open}, fan on: {fan_on}, heat pad on: {heat_pad_on}")
         temp_alert.set()
         await asyncio.sleep(hold_time)
