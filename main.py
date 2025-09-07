@@ -301,8 +301,12 @@ async def actuators(actuator_update, temp_alert):
             motor_1_backward(2)
             
         # Fan
+        if fan_on == True:
+            pass
         
         # Heat
+        if heat_pad_on = True:
+            pass
         
         print(f"roof open: {roof_open}, fan on: {fan_on}, heat pad on: {heat_pad_on}")
         temp_alert.set()
