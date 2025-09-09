@@ -10,7 +10,7 @@ alert_cooldown = 3600  # seconds (1 hour cooldown)
 def high_temp_alert(temp_celc_current, temp_celc_outside_current, roof_open, fan_on):
     global last_high_temp_alert_time
     current_struct = time.localtime()
-    current_time = time.mktime(current_struct)  # <-- convert to seconds
+    current_time = time.mktime(current_struct)  # convert to seconds
 
     # Only trigger if conditions met AND cooldown passed
     if temp_celc_current > 40:

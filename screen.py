@@ -2,6 +2,8 @@ def screen():
     pass
 
 """
+# https://www.instructables.com/Raspberry-Pi-Pico-Pico-Explorer-Workout/
+
 # This example lets you plug a BME280 breakout into your Pico Explorer and make a little indoor weather station, with barometer style descriptions.
 
 import time

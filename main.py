@@ -5,6 +5,7 @@ import utime
 import machine
 from actuators import actuator_logic
 from alerts import high_temp_alert, goodnight_message
+from led import red_led_on, red_led_off, green_led_on, green_led_off, blue_led_on, blue_led_off
 from location import get_location, get_timezone
 from logging import log, system_log
 from motors import move_roof
@@ -297,11 +298,17 @@ async def actuators(actuator_update, temp_alert):
     
         # Fan
         if fan_on == True:
-            pass
+            green_led_on()
+        elif fan_on == False:
+            green_led_off()
         
         # Heat
         if heat_pad_on == True:
-            pass
+            red_led_on()
+        elif heat_pad_on == False:
+            red_led_off()
+            
+        # Watering
         
         print(f"roof open: {roof_open}, fan on: {fan_on}, heat pad on: {heat_pad_on}")
         temp_alert.set()
