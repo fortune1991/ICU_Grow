@@ -1,1 +1,0 @@
-# Can only open if light sensor is getting a reading. So doesn't open when heat blanket is on.
