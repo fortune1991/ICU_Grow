@@ -17,7 +17,7 @@ def actuator_logic(
     is_night
 ):
     # configuration
-    roof_step = 25
+    roof_step = 33
     deadband = 0.5
     fan_on_delta = 2.0
 
@@ -34,7 +34,7 @@ def actuator_logic(
     else:
         # Cooling / roof modulation
         if temp_celc > (temp_setpoint_high + deadband):
-            new_roof_open = min(100, roof_open + roof_step)  # CHANGED: use current roof_open, not prev_roof
+            new_roof_open = min(99, roof_open + roof_step)  # CHANGED: use current roof_open, not prev_roof
         elif temp_celc < (temp_setpoint_high - deadband):
             new_roof_open = max(0, roof_open - roof_step)  # CHANGED: use current roof_open, not prev_roof
         # Else hold current roof position
@@ -48,7 +48,7 @@ def actuator_logic(
             new_fan_on = False
 
     # Fan assist if roof fully open
-    if new_roof_open == 100:
+    if new_roof_open == 99:
         if temp_celc > (temp_setpoint_high + fan_on_delta):
             new_fan_on = True
         elif temp_celc < temp_setpoint_high:

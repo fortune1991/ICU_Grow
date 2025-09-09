@@ -250,7 +250,7 @@ async def actuators(actuator_update, temp_alert):
     roof_open = 0
     fan_on = False
     heat_pad_on = False
-
+   
     while True:
         await actuator_update.wait()
         actuator_update.clear()
@@ -283,7 +283,7 @@ async def actuators(actuator_update, temp_alert):
             rh_current,
             is_night,
         )
-
+        
         if cover_on:
             if roof_open != 0 or fan_on:
                 roof_open = 0
@@ -293,8 +293,8 @@ async def actuators(actuator_update, temp_alert):
         # ACTUATIONS START BELOW
         
         # Roof
-        move_roof(prev_roof,roof_open)
-            
+        move_roof(prev_roof, roof_open)
+    
         # Fan
         if fan_on == True:
             pass

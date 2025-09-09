@@ -47,7 +47,7 @@ async def get_local_time(timezone, retries=2, delay=2):
     for attempt in range(1, retries + 1):
         try:
             # Get time from World Time API with timeout
-            response = urequests.get(f"http://worldtimeapi.org/api/timezone/{timezone}",timeout=5)
+            response = urequests.get(f"http://worldtimeapi.org/api/timezone/{timezone}",timeout=10)
             
             data = ujson.loads(response.text)
             
