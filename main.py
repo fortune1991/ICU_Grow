@@ -7,7 +7,7 @@ from actuators import actuator_logic
 from alerts import high_temp_alert, goodnight_message
 from location import get_location, get_timezone
 from logging import log, system_log
-from motors import motor_1_forward, motor_1_backward, motor_2_forward, motor_2_backward
+from motors import move_roof
 from screen import screen
 from sensors import sensor
 from weather import (
@@ -212,7 +212,7 @@ async def sensor_log(record_interval, csv_complete, actuator_update):
     while True:
         for _ in range(5):
             try:
-                temp_celc, rh, temp_celc_outside, lux = sensor()
+                temp_celc, rh, temp_celc_outside, lux, moisture_value = sensor()
                 log(temp_celc, rh, temp_celc_outside, lux, roof_open, fan_on, heat_pad_on, cover_on, is_night)
             except Exception as e:
                 print("Sensor log error:", e)
@@ -255,7 +255,7 @@ async def actuators(actuator_update, temp_alert):
         await actuator_update.wait()
         actuator_update.clear()
 
-        temp_celc_current, rh_current, temp_celc_outside_current, lux_current = sensor()
+        temp_celc_current, rh_current, temp_celc_outside_current, lux_current, moisture_current = sensor()
 
         (
             prev_temp,
@@ -293,19 +293,14 @@ async def actuators(actuator_update, temp_alert):
         # ACTUATIONS START BELOW
         
         # Roof
-        if roof_open > prev_roof:
-            system_log("Actuating motor forward")
-            motor_1_forward(2)
-        elif roof_open < prev_roof:
-            system_log("Actuating motor backward")
-            motor_1_backward(2)
+        move_roof(prev_roof,roof_open)
             
         # Fan
         if fan_on == True:
             pass
         
         # Heat
-        if heat_pad_on = True:
+        if heat_pad_on == True:
             pass
         
         print(f"roof open: {roof_open}, fan on: {fan_on}, heat pad on: {heat_pad_on}")

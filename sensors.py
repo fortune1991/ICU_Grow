@@ -3,6 +3,7 @@ from breakout_ltr559 import BreakoutLTR559
 from pimoroni_i2c import PimoroniI2C
 from pimoroni import PICO_EXPLORER_I2C_PINS
 from machine import Pin, ADC
+from moisture import Moisture
 from time import sleep
 
 def sensor():
@@ -11,6 +12,7 @@ def sensor():
     bme = BreakoutBME280(i2c, address=0x76) # temp and rh
     ltr = BreakoutLTR559(i2c) # Lux
     pi_temp = ADC(4) # The internal temperature sensor is connected to ADC4
+    moisture = Moisture(5) # Pin number
     
     # Convert raw ADC reading into voltage
     temp_conversion_factor = 3.3 / 65535
@@ -29,9 +31,12 @@ def sensor():
     # Formula from the RP2040 datasheet:
     temp_celc_outside = 27 - (outside_temp_reading - 0.706)/0.001721
     
-    print(f"temp_celc = {temp_celc}, rh = {rh}, temp_celc_outside = {temp_celc_outside}, lux = {lux}")
+    # Moisture
+    moisture_value = get_moisture(moisture)
     
-    return temp_celc, rh, temp_celc_outside, lux
+    print(f"temp_celc = {temp_celc}, rh = {rh}, temp_celc_outside = {temp_celc_outside}, lux = {lux}, moisture = {moisture_value}")
+    
+    return temp_celc, rh, temp_celc_outside, lux, moisture_value
 
 def get_lux(ltr, no_reads=3, delay=0.1):
     """
@@ -40,7 +45,7 @@ def get_lux(ltr, no_reads=3, delay=0.1):
     """
     
     for i in range(no_reads):
-        ltr.get_reading()   # throw away
+        ltr.get_reading()   # discard
         sleep(delay)
     
     # now trust readings
@@ -56,13 +61,18 @@ def get_temp(bme, no_reads=3, delay=0.1):
     """
     
     for i in range(no_reads):
-        bme.read()
+        bme.read() # discard
         sleep(delay)
     # now trust readings
     temp_celc, pressure, rh = bme.read()
     if temp_celc is not None:
         return temp_celc, pressure, rh
     return None
+
+def get_moisture(moisture):
+    # give it at least 1 second to count pulses
+    sleep(1.2)
+    return moisture.read()
 
     
     """

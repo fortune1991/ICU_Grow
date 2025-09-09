@@ -1,26 +1,52 @@
 import time
+import uasyncio as asyncio
 from motor import Motor
 
-def motor_1_forward(seconds):
-    MOTOR1 = Motor((8, 9))
-    MOTOR1.full_positive()
-    time.sleep(seconds)
-    MOTOR1.stop()
+# Define motors from class
+MOTOR1 = Motor((8, 9))
+MOTOR2 = Motor((10, 11))
 
-def motor_1_backward(seconds):
-    MOTOR1 = Motor((8, 9))
-    MOTOR1.full_negative()
-    time.sleep(seconds)
-    MOTOR1.stop()
+def window_move(speed_direction, duration, pause=2):
+    try:
+        MOTOR1.enable()
+        MOTOR2.enable()
+        try:
+            MOTOR1.speed(speed_direction)
+            MOTOR2.speed(-(speed_direction))
+        except Exception as e:
+            print("call failed:", e)
+        await asyncio.sleep(duration)
+        MOTOR1.stop()
+        MOTOR2.stop()
+    finally:
+        MOTOR1.stop()
+        MOTOR2.stop()
+        MOTOR1.disable()
+        MOTOR2.disable()
 
-def motor_2_forward(seconds):
-    MOTOR2 = Motor((10, 11))
-    MOTOR2.full_positive()
-    time.sleep(seconds)
-    MOTOR2.stop()
+def move_roof(prev_roof, roof_open):
+    if prev_roof == roof_open:
+        return
+    system_log(f"Actuating roof. prev_roof = {prev_roof}, roof_open = {roof_open}")
+    # Mapping of transitions
+    transitions = {
+        (0, 33):  (0.75, [0.3]),
+        (33, 66): (0.75, [0.4]),
+        (66, 99): (0.75, [0.6]),
+        (33, 0):  (-0.25, [0.39]),
+        (66, 33): (-0.25, [0.39]),
+        (99, 66): (-0.25, [0.39]),
+    }
 
-def motor_2_backward(seconds):
-    MOTOR2 = Motor((10, 11))
-    MOTOR2.full_negative()
-    time.sleep(seconds)
-    MOTOR2.stop()
+    action = transitions.get((prev_roof, roof_open))
+    if action:
+        speed, duration = action
+        window_move(speed, duration)
+    else:
+        system_log(f"Invalid inputs. Roof not actuated")
+    
+    return
+        
+
+# UP = 0.3, 0.4, 0.6 motor durations, speed 0.75
+# DOWN = 0.39, 0.39, 0.39 motor durations, speed -0.25
