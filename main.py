@@ -9,7 +9,8 @@ from led import red_led_on, red_led_off, green_led_on, green_led_off, blue_led_o
 from location import get_location, get_timezone
 from logging import log, system_log
 from motors import move_roof
-from screen import screen
+from picographics import PicoGraphics, DISPLAY_PICO_EXPLORER
+from screen import start_screen, start_up_success, start_up_fail, screen_current, screen_average
 from sensors import sensor
 from weather import (
     get_weather_data,
@@ -43,6 +44,18 @@ latitude = None
 longitude = None
 
 config = load_config()
+display = PicoGraphics(display=DISPLAY_PICO_EXPLORER)
+
+# Screen Colours
+BG       = display.create_pen(15, 25, 35)     # deep background
+STEM     = display.create_pen(30, 160, 60)    # stem green
+LEAF     = display.create_pen(50, 210, 100)   # leaf green
+BUD_BASE = display.create_pen(60, 180, 80)    # green bud base
+PETALS   = display.create_pen(240, 120, 160)  # petals (pink)
+CENTER   = display.create_pen(255, 230, 120)  # yellow centre
+WHITE    = display.create_pen(255, 255, 255)
+GREEN = display.create_pen(0, 255, 0)
+RED = display.create_pen(255, 0, 0)
 
 
 # Async application
@@ -55,6 +68,10 @@ async def main():
     global is_night, cover_on, last_goodnight_date, sunset_time
 
     try:
+        # Start Screen
+        screen_running = True
+        asyncio.create_task(start_screen(display, BG, STEM, LEAF, BUD_BASE, PETALS, CENTER, GREEN))
+        
         # Define constants and state
         record_interval = 1
         roof_open = 0
@@ -177,16 +194,21 @@ async def main():
             raise RuntimeError("Failed to get weather data after multiple attempts")
 
         # UI / Screen
-        print("Hello, Pi Pico W!")
-        system_log("Hello, Pi Pico W!")
-        screen()
-
         print("Start-up routine successful")
         system_log("Start-up routine successful")
+        # Stop flower animation before showing success
+        screen_running = False
+        await asyncio.sleep(0.1)
+        # Start Success Message
+        await start_up_success(display, BG, WHITE, GREEN)
 
     except Exception as e:
         print("Start-up routine failed:", e)
         system_log(f"Start-up routine failed: {e}")
+        screen_running = False
+        await asyncio.sleep(0.1)
+        # Show start-up fail
+        await start_up_fail(display, BG, RED, GREEN)
         return
 
     # Asyncio events

@@ -1,11 +1,166 @@
-def screen():
-    pass
-
-"""
 # https://www.instructables.com/Raspberry-Pi-Pico-Pico-Explorer-Workout/
 
 # This example lets you plug a BME280 breakout into your Pico Explorer and make a little indoor weather station, with barometer style descriptions.
 
+import uasyncio as asyncio
+import time
+import math
+from picographics import PicoGraphics, DISPLAY_PICO_EXPLORER
+
+# Global control flag to stop/start screen animation
+screen_running = True
+
+async def start_screen(display, BG, STEM, LEAF, BUD_BASE, PETALS, CENTER, GREEN):
+    """
+    Animated flower growth screen.
+    Stops automatically if `screen_running` is set False.
+    """
+    global screen_running
+    plant_height = 0
+    max_height = 110
+    stem_x = 120
+    stem_base = 210
+    stem_width = 3
+
+    leaf_stages = [
+        {"y": 55, "side": -1, "max_size": 10},
+        {"y": 70, "side": 1,  "max_size": 12},
+        {"y": 85, "side": -1, "max_size": 14},
+        {"y": 100, "side": 1, "max_size": 14},
+    ]
+
+    def draw_filled_leaf(x, y, size, flip=False):
+        for dx in range(-size, size + 1):
+            height = int(math.sqrt(size**2 - dx**2) * 0.6)
+            for dy in range(-height, height + 1):
+                display.pixel(x + dx if not flip else x - dx, y + dy)
+
+    def draw_flower(x, y, growth):
+        bud_size = int(5 + growth * 0.5)
+        max_size = 28
+        if bud_size > max_size:
+            bud_size = max_size
+
+        display.set_pen(BUD_BASE)
+        display.circle(x, y, bud_size)
+
+        if bud_size > 10:
+            display.set_pen(PETALS)
+            for angle in range(0, 360, 30):
+                rad = math.radians(angle)
+                px = int(x + math.cos(rad) * (bud_size + 5))
+                py = int(y + math.sin(rad) * (bud_size + 5))
+                display.circle(px, py, bud_size // 3)
+
+        if bud_size > 12:
+            display.set_pen(CENTER)
+            display.circle(x, y, bud_size // 3)
+
+    while screen_running:
+        display.set_pen(BG)
+        display.clear()
+
+        # Title
+        display.set_pen(GREEN)
+        display.text("ICU Grow", 40, 10, 200, 4)
+
+        # Draw stem
+        display.set_pen(STEM)
+        for h in range(plant_height):
+            offset = int(4 * math.sin(h / 25))
+            display.rectangle(stem_x + offset - stem_width // 2, stem_base - h, stem_width, 1)
+
+        # Leaves
+        for leaf in leaf_stages:
+            if plant_height > leaf["y"]:
+                growth = min((plant_height - leaf["y"]) // 3, leaf["max_size"])
+                if growth > 0:
+                    display.set_pen(LEAF)
+                    draw_filled_leaf(
+                        stem_x + (leaf["side"] * (10 + growth // 2)),
+                        stem_base - leaf["y"],
+                        growth,
+                        flip=(leaf["side"] < 0),
+                    )
+
+        # Flower
+        if plant_height > max_height * 0.6:
+            growth_progress = (plant_height - max_height * 0.6) / (max_height * 0.4)
+            draw_flower(stem_x, stem_base - max_height, growth_progress * 50)
+
+        display.update()
+
+        # Growth speed
+        if plant_height < max_height:
+            plant_height += 3
+            await asyncio.sleep(0.05)
+        else:
+            await asyncio.sleep(1.5)
+            plant_height = 0
+
+
+async def start_up_success(display, BG, WHITE, GREEN):
+    """
+    Flashing success message without background corruption.
+    """
+    display.clear()
+    display.set_pen(GREEN)
+    display.text("ICU Grow", 40, 10, 200, 4)
+    display.update()
+
+    # Flash message
+    display.set_pen(WHITE)
+    for _ in range(3):
+        display.text("Startup Successful", 40, 50, 200, 4)
+        display.update()
+        await asyncio.sleep(0.5)
+        display.set_pen(BG)
+        display.rectangle(40, 50, 200, 20)
+        display.update()
+        await asyncio.sleep(0.3)
+
+    # Final message
+    display.set_pen(WHITE)
+    display.text("Startup Successful", 40, 50, 200, 4)
+    display.update()
+    await asyncio.sleep(1)
+
+
+async def start_up_fail(display, BG, RED, GREEN):
+    """
+    Flashing fail message without background corruption.
+    """
+    display.clear()
+    display.set_pen(GREEN)
+    display.text("ICU Grow", 40, 10, 200, 4)
+    display.update()
+
+    # Flash message
+    display.set_pen(RED)
+    for _ in range(3):
+        display.text("Startup FAILED", 40, 50, 200, 4)
+        display.update()
+        await asyncio.sleep(0.5)
+        display.set_pen(BG)
+        display.rectangle(40, 50, 200, 20)
+        display.update()
+        await asyncio.sleep(0.3)
+
+    # Final message
+    display.set_pen(RED)
+    display.text("Startup FAILED", 40, 50, 200, 4)
+    display.update()
+    await asyncio.sleep(1)
+
+# Placeholder functions
+def screen_current():
+    pass
+
+def screen_average():
+    pass
+
+    
+"""
 import time
 from breakout_bme280 import BreakoutBME280
 from pimoroni_i2c import PimoroniI2C
