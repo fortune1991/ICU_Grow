@@ -10,7 +10,7 @@ from location import get_location, get_timezone
 from logging import log, system_log
 from motors import move_roof
 from picographics import PicoGraphics, DISPLAY_PICO_EXPLORER
-from screen import start_screen, start_up_success, start_up_fail, screen_current, screen_average
+from screen import title, start_screen, start_up_success, start_up_fail, screen_current, screen_average
 from sensors import sensor
 from weather import (
     get_weather_data,
@@ -69,8 +69,10 @@ async def main():
 
     try:
         # Start Screen
-        screen_running = True
-        asyncio.create_task(start_screen(display, BG, STEM, LEAF, BUD_BASE, PETALS, CENTER, GREEN))
+        screen_running = asyncio.Event()
+        screen_running.set()
+        asyncio.create_task(title(display, BG, GREEN))
+        asyncio.create_task(start_screen(display, screen_running, BG, STEM, LEAF, BUD_BASE, PETALS, CENTER, GREEN))
         
         # Define constants and state
         record_interval = 1
@@ -87,7 +89,7 @@ async def main():
         sunset_time = None
 
         # Wait for USB to become ready (blocking during startup)
-        time.sleep(0.1)
+        await asyncio.sleep(0.1)
 
         # Connect to Wi-Fi
         SSID = config["SSID"]
@@ -97,13 +99,13 @@ async def main():
         wlan.active(True)
         wlan.connect(SSID, PASSWORD)
 
-        wifi_retries = 10
+        wifi_retries = 1 # Change back to 10
         for attempt in range(wifi_retries):
             if wlan.isconnected():
                 break
             print("Connecting to Wi-Fi...")
             system_log("Connecting to Wi-Fi...")
-            time.sleep(5)
+            await asyncio.sleep(5)
         else:
             raise RuntimeError("Failed to connect to Wi-Fi after multiple attempts")
 
@@ -125,7 +127,7 @@ async def main():
             except Exception as e:
                 print(f"Attempt {attempt+1} to get timezone failed: {e}")
                 system_log(f"Attempt {attempt+1} to get timezone failed: {e}")
-                time.sleep(2)
+                await asyncio.sleep(2)
         else:
             raise RuntimeError("Failed to get timezone after multiple attempts")
 
@@ -141,7 +143,7 @@ async def main():
             except Exception as e:
                 print(f"Attempt {attempt+1} to get location failed: {e}")
                 system_log(f"Attempt {attempt+1} to get location failed: {e}")
-                time.sleep(2)
+                await asyncio.sleep(2)
         else:
             raise RuntimeError("Failed to get location after multiple attempts")
 
@@ -189,7 +191,7 @@ async def main():
             except Exception as e:
                 print(f"Attempt {attempt+1} to get weather data failed: {e}")
                 system_log(f"Attempt {attempt+1} to get weather data failed: {e}")
-                time.sleep(2)
+                await asyncio.sleep(2)
         else:
             raise RuntimeError("Failed to get weather data after multiple attempts")
 
@@ -197,7 +199,7 @@ async def main():
         print("Start-up routine successful")
         system_log("Start-up routine successful")
         # Stop flower animation before showing success
-        screen_running = False
+        screen_running.clear()
         await asyncio.sleep(0.1)
         # Start Success Message
         await start_up_success(display, BG, WHITE, GREEN)
@@ -205,7 +207,7 @@ async def main():
     except Exception as e:
         print("Start-up routine failed:", e)
         system_log(f"Start-up routine failed: {e}")
-        screen_running = False
+        screen_running.clear()
         await asyncio.sleep(0.1)
         # Show start-up fail
         await start_up_fail(display, BG, RED, GREEN)
@@ -411,6 +413,7 @@ async def goodnight_routine(goodnight):
             fan_on = False
             goodnight_message()
             last_goodnight_date = current_date
+
 
 async def cover_check():
     """Runs independently to keep is_night and cover_on up-to-date."""

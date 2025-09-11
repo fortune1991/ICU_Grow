@@ -5,7 +5,7 @@ from pimoroni_i2c import PimoroniI2C
 from pimoroni import PICO_EXPLORER_I2C_PINS
 from machine import Pin, ADC
 from moisture import Moisture
-from time import sleep
+import uasyncio as asyncio
 import onewire
 import ds18x20
 
@@ -45,7 +45,7 @@ def get_lux(ltr, no_reads=3, delay=0.1):
     
     for i in range(no_reads):
         ltr.get_reading()   # discard
-        sleep(delay)
+        await asyncio.sleep(delay)
     
     # now trust readings
     reading = ltr.get_reading()
@@ -61,7 +61,7 @@ def get_temp(bme, no_reads=3, delay=0.1):
     
     for i in range(no_reads):
         bme.read() # discard
-        sleep(delay)
+        await asyncio.sleep(delay)
     # now trust readings
     temp_celc, pressure, rh = bme.read()
     if temp_celc is not None:
@@ -75,10 +75,10 @@ def get_external_temp(one_wire_sensor, delay=0.1):
         sensor_count = len(roms)
         if sensor_count > 0:
             one_wire_sensor.convert_temp()
-            sleep(0.8)
+            await asyncio.sleep(0.8)
             for rom in roms:
                 external_temp = one_wire_sensor.read_temp(rom)
-                sleep(delay)
+                await asyncio.sleep(delay)
 
     except:
         system_log("Error reading external tempurature sensor")
@@ -87,7 +87,7 @@ def get_external_temp(one_wire_sensor, delay=0.1):
 
 def get_moisture(moisture):
     # give it at least 1 second to count pulses
-    sleep(1.2)
+    await asyncio.sleep(1.2)
     return moisture.read()
     
 

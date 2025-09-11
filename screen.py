@@ -7,15 +7,42 @@ import time
 import math
 from picographics import PicoGraphics, DISPLAY_PICO_EXPLORER
 
-# Global control flag to stop/start screen animation
-screen_running = True
-
-async def start_screen(display, BG, STEM, LEAF, BUD_BASE, PETALS, CENTER, GREEN):
+async def title(display, BG, GREEN):
+    """
+    Animated flower growth screen.
+    Stops automatically if `screen_running` is set False.
+    """    
+    # Clear Screen
+    display.set_pen(BG)
+    display.clear()
+    await asyncio.sleep(2)
+    
+    # Title
+    display.set_pen(GREEN)
+    display.text("ICU Grow", 40, 10, 200, 4)
+    display.update()
+    
+def clear_animation_area(display, BG, top_y=40):
+    """
+    Clears only the area below the title, leaving the title intact.
+    
+    :param display: PicoGraphics display object
+    :param BG: background pen color
+    :param top_y: the y-coordinate where the animation starts
+    """
+    width, height = display.get_bounds()
+    display.set_pen(BG)
+    display.rectangle(0, top_y, width, height - top_y)
+    display.update()
+    
+    
+async def start_screen(display, screen_running, BG, STEM, LEAF, BUD_BASE, PETALS, CENTER, GREEN):
     """
     Animated flower growth screen.
     Stops automatically if `screen_running` is set False.
     """
-    global screen_running
+    await asyncio.sleep(2)
+    
     plant_height = 0
     max_height = 110
     stem_x = 120
@@ -55,15 +82,8 @@ async def start_screen(display, BG, STEM, LEAF, BUD_BASE, PETALS, CENTER, GREEN)
         if bud_size > 12:
             display.set_pen(CENTER)
             display.circle(x, y, bud_size // 3)
-
-    while screen_running:
-        display.set_pen(BG)
-        display.clear()
-
-        # Title
-        display.set_pen(GREEN)
-        display.text("ICU Grow", 40, 10, 200, 4)
-
+    
+    while screen_running.is_set():
         # Draw stem
         display.set_pen(STEM)
         for h in range(plant_height):
@@ -97,60 +117,67 @@ async def start_screen(display, BG, STEM, LEAF, BUD_BASE, PETALS, CENTER, GREEN)
         else:
             await asyncio.sleep(1.5)
             plant_height = 0
-
-
+            
+    # Clear Screen when exiting start-up screen
+    clear_animation_area(display, BG)
+    await asyncio.sleep(1)
+    
 async def start_up_success(display, BG, WHITE, GREEN):
     """
     Flashing success message without background corruption.
     """
-    display.clear()
-    display.set_pen(GREEN)
-    display.text("ICU Grow", 40, 10, 200, 4)
-    display.update()
-
+    await asyncio.sleep(1)
+    
     # Flash message
-    display.set_pen(WHITE)
     for _ in range(3):
+        # Draw Title and Message
+        display.set_pen(GREEN)
+        display.text("ICU Grow", 40, 10, 200, 4)
+        display.set_pen(WHITE)
         display.text("Startup Successful", 40, 50, 200, 4)
         display.update()
         await asyncio.sleep(0.5)
+        # Flash effect (rectangle over message)
         display.set_pen(BG)
-        display.rectangle(40, 50, 200, 20)
+        display.rectangle(40, 50, 200, 60)
         display.update()
-        await asyncio.sleep(0.3)
+        await asyncio.sleep(0.5)
 
     # Final message
+    display.set_pen(GREEN)
+    display.text("ICU Grow", 40, 10, 200, 4)
     display.set_pen(WHITE)
     display.text("Startup Successful", 40, 50, 200, 4)
     display.update()
-    await asyncio.sleep(1)
-
+    
 
 async def start_up_fail(display, BG, RED, GREEN):
     """
     Flashing fail message without background corruption.
-    """
-    display.clear()
-    display.set_pen(GREEN)
-    display.text("ICU Grow", 40, 10, 200, 4)
-    display.update()
+    """    
+    await asyncio.sleep(1)
 
     # Flash message
-    display.set_pen(RED)
     for _ in range(3):
+        # Draw Title and Message
+        display.set_pen(GREEN)
+        display.text("ICU Grow", 40, 10, 200, 4)
+        display.set_pen(RED)
         display.text("Startup FAILED", 40, 50, 200, 4)
         display.update()
         await asyncio.sleep(0.5)
+        # Flash effect (rectangle over message)
         display.set_pen(BG)
-        display.rectangle(40, 50, 200, 20)
+        display.rectangle(40, 50, 200, 60)
         display.update()
-        await asyncio.sleep(0.3)
+        await asyncio.sleep(0.5)
 
     # Final message
+    display.set_pen(GREEN)
+    display.text("ICU Grow", 40, 10, 200, 4)
     display.set_pen(RED)
     display.text("Startup FAILED", 40, 50, 200, 4)
     display.update()
-    await asyncio.sleep(1)
 
 # Placeholder functions
 def screen_current():
