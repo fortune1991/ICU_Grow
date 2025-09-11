@@ -131,8 +131,6 @@ async def start_up_success(display, BG, WHITE, GREEN):
     # Flash message
     for _ in range(3):
         # Draw Title and Message
-        display.set_pen(GREEN)
-        display.text("ICU Grow", 40, 10, 200, 4)
         display.set_pen(WHITE)
         display.text("Startup Successful", 40, 50, 200, 4)
         display.update()
@@ -144,8 +142,6 @@ async def start_up_success(display, BG, WHITE, GREEN):
         await asyncio.sleep(0.5)
 
     # Final message
-    display.set_pen(GREEN)
-    display.text("ICU Grow", 40, 10, 200, 4)
     display.set_pen(WHITE)
     display.text("Startup Successful", 40, 50, 200, 4)
     display.update()
@@ -160,8 +156,6 @@ async def start_up_fail(display, BG, RED, GREEN):
     # Flash message
     for _ in range(3):
         # Draw Title and Message
-        display.set_pen(GREEN)
-        display.text("ICU Grow", 40, 10, 200, 4)
         display.set_pen(RED)
         display.text("Startup FAILED", 40, 50, 200, 4)
         display.update()
@@ -173,135 +167,43 @@ async def start_up_fail(display, BG, RED, GREEN):
         await asyncio.sleep(0.5)
 
     # Final message
-    display.set_pen(GREEN)
-    display.text("ICU Grow", 40, 10, 200, 4)
     display.set_pen(RED)
     display.text("Startup FAILED", 40, 50, 200, 4)
     display.update()
 
-# Placeholder functions
-def screen_current():
+def screen_temperature_inside(display, BG, WHITE, temp_celc_current, temp_celc_average, temp_celc_low, temp_celc_high):
+    clear_animation_area(display, BG)
+
+def screen_temperature_outside(temp_celc_outside_current, temp_celc_outside_average, temp_celc_outside_low, temp_celc_outside_high):
     pass
 
-def screen_average():
+def screen_temperature_humidity(rh_current, rh_average, rh_low, rh_high):
     pass
 
+def screen_actuations():
+    pass
+
+
+
+
+# TESTING
+
+async def main():
+    display = PicoGraphics(display=DISPLAY_PICO_EXPLORER)
+
+    # Screen Colours
+    BG       = display.create_pen(15, 25, 35)     # deep background
+    STEM     = display.create_pen(30, 160, 60)    # stem green
+    LEAF     = display.create_pen(50, 210, 100)   # leaf green
+    BUD_BASE = display.create_pen(60, 180, 80)    # green bud base
+    PETALS   = display.create_pen(240, 120, 160)  # petals (pink)
+    CENTER   = display.create_pen(255, 230, 120)  # yellow centre
+    WHITE    = display.create_pen(255, 255, 255)
+    GREEN = display.create_pen(0, 255, 0)
+    RED = display.create_pen(255, 0, 0)
     
-"""
-import time
-from breakout_bme280 import BreakoutBME280
-from pimoroni_i2c import PimoroniI2C
-from pimoroni import PICO_EXPLORER_I2C_PINS
-from picographics import PicoGraphics, DISPLAY_PICO_EXPLORER
+    await start_up_success(display, BG, WHITE, GREEN)
 
-# set up the hardware
-display = PicoGraphics(display=DISPLAY_PICO_EXPLORER)
-i2c = PimoroniI2C(**PICO_EXPLORER_I2C_PINS)
-bme = BreakoutBME280(i2c, address=0x76)
+# Run the event loop
+asyncio.run(main())
 
-# lets set up some pen colours to make drawing easier
-TEMPCOLOUR = display.create_pen(0, 0, 0)  # this colour will get changed in a bit
-WHITE = display.create_pen(255, 255, 255)
-BLACK = display.create_pen(0, 0, 0)
-RED = display.create_pen(255, 0, 0)
-GREY = display.create_pen(125, 125, 125)
-
-
-# converts the temperature into a barometer-type description and pen colour
-def describe_temperature(temperature):
-    global TEMPCOLOUR
-    if temperature < 10:
-        description = "very cold"
-        TEMPCOLOUR = display.create_pen(0, 255, 255)
-    elif 10 <= temperature < 20:
-        description = "cold"
-        TEMPCOLOUR = display.create_pen(0, 0, 255)
-    elif 20 <= temperature < 25:
-        description = "temperate"
-        TEMPCOLOUR = display.create_pen(0, 255, 0)
-    elif 25 <= temperature < 30:
-        description = "warm"
-        TEMPCOLOUR = display.create_pen(255, 255, 0)
-    elif temperature >= 30:
-        description = "very warm"
-        TEMPCOLOUR = display.create_pen(255, 0, 0)
-    else:
-        description = ""
-        TEMPCOLOUR = display.create_pen(0, 0, 0)
-    return description
-
-
-# converts pressure into barometer-type description
-def describe_pressure(pressure):
-    if pressure < 970:
-        description = "storm"
-    elif 970 <= pressure < 990:
-        description = "rain"
-    elif 990 <= pressure < 1010:
-        description = "change"
-    elif 1010 <= pressure < 1030:
-        description = "fair"
-    elif pressure >= 1030:
-        description = "dry"
-    else:
-        description = ""
-    return description
-
-
-# converts humidity into good/bad description
-def describe_humidity(humidity):
-    if 40 < humidity < 60:
-        description = "good"
-    else:
-        description = "bad"
-    return description
-
-
-while True:
-    display.set_pen(BLACK)
-    display.clear()
-
-    # read the sensors
-    temperature, pressure, humidity = bme.read()
-    # pressure comes in pascals which is a reight long number, lets convert it to the more manageable hPa
-    pressurehpa = pressure / 100
-
-    # draw a thermometer/barometer thingy
-    display.set_pen(GREY)
-    display.circle(190, 190, 40)
-    display.rectangle(180, 45, 20, 140)
-
-    # switch to red to draw the 'mercury'
-    display.set_pen(RED)
-    display.circle(190, 190, 30)
-    thermometerheight = int(120 / 30 * temperature)
-    if thermometerheight > 120:
-        thermometerheight = 120
-    if thermometerheight < 1:
-        thermometerheight = 1
-    display.rectangle(186, 50 + 120 - thermometerheight, 10, thermometerheight)
-
-    # drawing the temperature text
-    display.set_pen(WHITE)
-    display.text("temperature:", 10, 10, 240, 3)
-    display.set_pen(TEMPCOLOUR)
-    display.text("{:.1f}".format(temperature) + "C", 10, 30, 240, 5)
-    display.set_pen(WHITE)
-    display.text(describe_temperature(temperature), 10, 60, 240, 3)
-
-    # and the pressure text
-    display.text("pressure:", 10, 90, 240, 3)
-    display.text("{:.0f}".format(pressurehpa) + "hPa", 10, 110, 240, 5)
-    display.text(describe_pressure(pressurehpa), 10, 140, 240, 3)
-
-    # and the humidity text
-    display.text("humidity:", 10, 170, 240, 3)
-    display.text("{:.0f}".format(humidity) + "%", 10, 190, 240, 5)
-    display.text(describe_humidity(humidity), 10, 220, 240, 3)
-
-    # time to update the display
-    display.update()
-
-    # waits for 1 second and clears to BLACK
-    time.sleep(1)
-"""
