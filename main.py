@@ -10,7 +10,7 @@ from location import get_location, get_timezone
 from logging import log, system_log
 from motors import move_roof
 from picographics import PicoGraphics, DISPLAY_PICO_EXPLORER
-from screen import title, start_screen, start_up_success, start_up_fail, screen_current, screen_average
+from screen import title, clear_animation_area, start_screen, start_up_success, start_up_fail, screen_temperature_inside, screen_temperature_outside, screen_humidity, screen_actuations
 from sensors import sensor
 from weather import (
     get_weather_data,
@@ -56,6 +56,7 @@ CENTER   = display.create_pen(255, 230, 120)  # yellow centre
 WHITE    = display.create_pen(255, 255, 255)
 GREEN = display.create_pen(0, 255, 0)
 RED = display.create_pen(255, 0, 0)
+ORANGE = display.create_pen(255, 165, 0)
 
 
 # Async application
@@ -200,6 +201,7 @@ async def main():
         system_log("Start-up routine successful")
         # Stop flower animation before showing success
         screen_running.clear()
+        clear_animation_area(display, BG)
         await asyncio.sleep(0.1)
         # Start Success Message
         await start_up_success(display, BG, WHITE, GREEN)
@@ -208,6 +210,7 @@ async def main():
         print("Start-up routine failed:", e)
         system_log(f"Start-up routine failed: {e}")
         screen_running.clear()
+        clear_animation_area(display, BG)
         await asyncio.sleep(0.1)
         # Show start-up fail
         await start_up_fail(display, BG, RED, GREEN)
@@ -218,6 +221,10 @@ async def main():
     actuator_update = asyncio.Event()
     temp_alert = asyncio.Event()
     goodnight = asyncio.Event()
+    temp_inside_display_start = asyncio.Event()
+    temp_outside_display_start = asyncio.Event()
+    humidity_display_start = asyncio.Event()
+    actuations_display_start = asyncio.Event()
 
     # Start all tasks concurrently
     await asyncio.gather(
@@ -230,6 +237,10 @@ async def main():
         clock_sync(),
         cover_check(),
         wifi_watch(SSID, PASSWORD),
+        temp_inside_display(temp_inside_display_start),
+        temp_outside_display(temp_outside_display_start),
+        humidity_display(humidity_display_start),
+        actuations_display(actuations_display_start),
     )
 
 async def sensor_log(record_interval, csv_complete, actuator_update):
@@ -247,8 +258,21 @@ async def sensor_log(record_interval, csv_complete, actuator_update):
         csv_complete.set()
 
 
-async def refresh_screen(temp_celc, rh, lux):
+async def temp_inside_display(temp_inside_display_start):
     pass
+
+
+async def temp_outside_display(temp_outside_display_start):
+    pass
+
+
+async def humidity_display(humidity_display_start):
+    pass
+
+
+async def actuations_display(actuations_display_start):
+    pass
+                
 
 async def cloud_upload(csv_complete, actuator_update):
     while True:
@@ -316,7 +340,6 @@ async def actuators(actuator_update, temp_alert):
                 system_log("Cover detected: forced roof closed and fan off")
 
         # ACTUATIONS START BELOW
-        
         # Roof
         move_roof(prev_roof, roof_open)
     
@@ -337,6 +360,7 @@ async def actuators(actuator_update, temp_alert):
         print(f"roof open: {roof_open}, fan on: {fan_on}, heat pad on: {heat_pad_on}")
         temp_alert.set()
         await asyncio.sleep(hold_time)
+
 
 async def weather_check():
     global sunset_time
@@ -469,6 +493,7 @@ async def clock_sync():
         seconds_until_3am = seconds_until(3)
         await asyncio.sleep(seconds_until_3am)
         
+        
 async def wifi_watch(ssid, password, check_interval=10):
     """
     Periodically checks Wi-Fi connection and reconnects if dropped.
@@ -495,11 +520,12 @@ async def wifi_watch(ssid, password, check_interval=10):
                 system_log("Wi-Fi reconnect failed")
         await asyncio.sleep(check_interval)
 
+
 # Run the whole program
 asyncio.run(main())
 
 
-## Once data is being recorded _> Cloud Infrastructure:
+# Cloud Infrastructure:
 
     # AWS IoT Core (optional but robust for secure device messaging via MQTT or HTTPS)
     # AWS Lambda (process/transform data)
