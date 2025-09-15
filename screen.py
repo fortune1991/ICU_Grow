@@ -11,7 +11,7 @@ async def title(display, BG, GREEN):
     # Clear Screen
     display.set_pen(BG)
     display.clear()
-    await asyncio.sleep(2)
+    await asyncio.sleep(0.1)
     
     # Title
     display.set_pen(GREEN)
@@ -33,19 +33,21 @@ def clear_animation_area(display, BG, top_y=40):
     display.update()
     
     
+    
 async def start_screen(display, screen_running, BG, STEM, LEAF, BUD_BASE, PETALS, CENTER, GREEN):
     """
-    Animated flower growth screen.
-    Stops automatically if `screen_running` event is cleared
+    Memory-light animated flower growth.
+    Redraws stem, leaves, and flower each frame.
+    Stops if `screen_running` is cleared.
     """
-    await asyncio.sleep(2)
-    
-    plant_height = 0
+    await asyncio.sleep(0.1)
+
     max_height = 110
     stem_x = 120
     stem_base = 210
     stem_width = 3
 
+    # Leaf positions relative to stem
     leaf_stages = [
         {"y": 55, "side": -1, "max_size": 10},
         {"y": 70, "side": 1,  "max_size": 12},
@@ -53,18 +55,15 @@ async def start_screen(display, screen_running, BG, STEM, LEAF, BUD_BASE, PETALS
         {"y": 100, "side": 1, "max_size": 14},
     ]
 
-    def draw_filled_leaf(x, y, size, flip=False):
-        for dx in range(-size, size + 1):
+    def draw_leaf(x, y, size, flip=False):
+        step = 2  # reduces pixel count, saves memory
+        for dx in range(-size, size + 1, step):
             height = int(math.sqrt(size**2 - dx**2) * 0.6)
-            for dy in range(-height, height + 1):
-                display.pixel(x + dx if not flip else x - dx, y + dy)
+            for dy in range(-height, height + 1, step):
+                display.pixel(x + (-dx if flip else dx), y + dy)
 
     def draw_flower(x, y, growth):
-        bud_size = int(5 + growth * 0.5)
-        max_size = 28
-        if bud_size > max_size:
-            bud_size = max_size
-
+        bud_size = min(int(5 + growth * 0.5), 28)
         display.set_pen(BUD_BASE)
         display.circle(x, y, bud_size)
 
@@ -79,47 +78,48 @@ async def start_screen(display, screen_running, BG, STEM, LEAF, BUD_BASE, PETALS
         if bud_size > 12:
             display.set_pen(CENTER)
             display.circle(x, y, bud_size // 3)
-    
+
+    plant_height = 0
+
     while screen_running.is_set():
+        # Clear only animation area (optional, keep stem redraw simple)
+        width, height = display.get_bounds()
+        display.set_pen(BG)
+        display.rectangle(0, 40, width, height - 40)
+
         # Draw stem
         display.set_pen(STEM)
         for h in range(plant_height):
             offset = int(4 * math.sin(h / 25))
             display.rectangle(stem_x + offset - stem_width // 2, stem_base - h, stem_width, 1)
 
-        # Leafs
+        # Draw leaves
+        display.set_pen(LEAF)
         for leaf in leaf_stages:
             if plant_height > leaf["y"]:
                 growth = min((plant_height - leaf["y"]) // 3, leaf["max_size"])
                 if growth > 0:
-                    display.set_pen(LEAF)
-                    draw_filled_leaf(
-                        stem_x + (leaf["side"] * (10 + growth // 2)),
-                        stem_base - leaf["y"],
-                        growth,
-                        flip=(leaf["side"] < 0),
-                    )
+                    draw_leaf(stem_x + (leaf["side"] * (10 + growth // 2)),
+                              stem_base - leaf["y"],
+                              growth,
+                              flip=(leaf["side"] < 0))
 
-        # Flower
+        # Draw flower bud
         if plant_height > max_height * 0.6:
             growth_progress = (plant_height - max_height * 0.6) / (max_height * 0.4)
             draw_flower(stem_x, stem_base - max_height, growth_progress * 50)
 
         display.update()
 
-        # Growth speed
+        # Increment growth
         if plant_height < max_height:
-            plant_height += 3
-            await asyncio.sleep(0.05)
+            plant_height += 6
+            await asyncio.sleep(0.05)  # growth speed
         else:
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(0.5)
             plant_height = 0
-            
-    # Clear Screen when exiting start-up screen
-    clear_animation_area(display, BG)
-    await asyncio.sleep(1)
-    
-    
+
+
 async def start_up_success(display, BG, WHITE, GREEN):
     """
     Flashing success message without background corruption.
