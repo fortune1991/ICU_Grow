@@ -43,6 +43,7 @@ from async_startup_functions import (
 from utils import get_local_time, load_config, seconds_until
 import state
 import machine
+import sys
 import time
 import utime
 
@@ -86,8 +87,8 @@ async def main():
         await asyncio.sleep(0.01)
 
         # Define constants and state
-        state.record_interval = 5  # seconds
-        state.cloud_upload_interval = 5  # sensor reads
+        state.record_interval = 5  #seconds
+        state.cloud_upload_interval = 5  #sensor reads
         state.roof_open = 0
         state.fan_on = False
         state.irrigation_on = False
@@ -148,7 +149,7 @@ async def main():
         await asyncio.sleep(0.1)
         # Show start-up fail
         await start_up_fail(display, BG, RED, GREEN)
-        return  # exit(1) ?
+        sys.exit(1)
 
     # Define Asyncio events for main loop
     csv_complete = asyncio.Event()
@@ -167,10 +168,10 @@ async def main():
         clock_sync(),
         cover_check(i2c),
         wifi_watch(SSID, PASSWORD),
-        temp_inside_display(button_a, button_b, button_x, button_y),
-        temp_outside_display(button_a, button_b, button_x, button_y),
-        humidity_display(button_a, button_b, button_x, button_y),
-        actuations_display(button_a, button_b, button_x, button_y),
+        temp_inside_display(display, button_a, button_b, button_x, button_y, BG, WHITE, ORANGE),
+        temp_outside_display(display, button_a, button_b, button_x, button_y, BG, WHITE, ORANGE),
+        humidity_display(display, button_a, button_b, button_x, button_y, BG, WHITE, ORANGE),
+        actuations_display(display, button_a, button_b, button_x, button_y, BG, WHITE, ORANGE),
     )
 
 # Run the whole program
@@ -178,7 +179,6 @@ asyncio.run(main())
 
 
 # NEXT
-# Move async functions into loop.py? Clean up notes
 # Write functions to calculate averages for screen
 # write error_count function
 

@@ -61,7 +61,7 @@ async def sensor_log(record_interval, cloud_upload_interval, csv_complete, actua
         csv_complete.set()
 
 
-async def temp_inside_display(button_a, button_b, button_x, button_y):
+async def temp_inside_display(display, button_a, button_b, button_x, button_y, BG, WHITE, ORANGE):
     """If button A pressed, show temp_inside screen. Refresh temp every 10s until another button pressed."""
     while True:
         if button_a.read():
@@ -97,7 +97,7 @@ async def temp_inside_display(button_a, button_b, button_x, button_y):
             await asyncio.sleep(0.1)
 
 
-async def temp_outside_display(button_a, button_b, button_x, button_y):
+async def temp_outside_display(display, button_a, button_b, button_x, button_y, BG, WHITE, ORANGE):
     """If button B pressed, show temp_outside screen. Refresh temp every 10s until another button pressed."""
     while True:
         if button_b.read():
@@ -134,7 +134,7 @@ async def temp_outside_display(button_a, button_b, button_x, button_y):
             await asyncio.sleep(0.1)
 
 
-async def humidity_display(button_a, button_b, button_x, button_y):
+async def humidity_display(display, button_a, button_b, button_x, button_y, BG, WHITE, ORANGE):
     """If button X pressed, show humidity screen. Refresh every 10s until another button pressed."""
     while True:
         if button_x.read():
@@ -171,7 +171,7 @@ async def humidity_display(button_a, button_b, button_x, button_y):
             await asyncio.sleep(0.1)
 
 
-async def actuations_display(button_a, button_b, button_x, button_y):
+async def actuations_display(display, button_a, button_b, button_x, button_y, BG, WHITE, ORANGE):
     """If button Y pressed, show actuations screen. Refresh every 10s until another button pressed."""
     error_count = 2
 
@@ -252,7 +252,7 @@ async def actuators(actuator_update, temp_alert):
 
         except Exception as e:
             print("Sensor log error (actuation):", e)
-            system_log(f"Sensor log error: {e}")
+            system_log(f"Sensor log error (actuation): {e}")
 
         (
             prev_temp,
