@@ -1,12 +1,12 @@
 # Secret configuration files
-config.json
-config*.json
-secrets.json
-*.key
+src/config.json
+src/config*.json
+src/secrets.json
+src/*.key
 
-# Thonny/MicroPython temporary files
-__pycache__/
-*.pyc
-*.log
-*.csv
-last_id.txt
+# Thonny / MicroPython temporary files
+**/__pycache__/
+**/*.pyc
+**/*.log
+**/*.csv
+**/last_id.txt
