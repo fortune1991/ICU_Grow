@@ -41,49 +41,42 @@ def load_update_id():
 
 async def get_local_time(timezone, retries=2, delay=2):
     """
-    Async MicroPython version: fetches local time with fallback methods
+    Fetches local time from World Time API.
+    Returns struct_time as integers and offset string.
     """
     response = None
     for attempt in range(1, retries + 1):
         try:
-            # Get time from World Time API with timeout
-            response = urequests.get(f"http://worldtimeapi.org/api/timezone/{timezone}",timeout=10)
-            
+            response = urequests.get(f"http://worldtimeapi.org/api/timezone/{timezone}", timeout=10)
             data = ujson.loads(response.text)
-            
-            datetime_str = data['datetime']
-            utc_offset = data['utc_offset'] 
 
-            # Parse UTC time
+            datetime_str = data['datetime']
+            utc_offset = data['utc_offset']  
+
+            # Parse time components
             year = int(datetime_str[0:4])
             month = int(datetime_str[5:7])
             day = int(datetime_str[8:10])
             hour = int(datetime_str[11:13])
             minute = int(datetime_str[14:16])
             second = int(datetime_str[17:19])
-                        
+
             struct = (year, month, day, hour, minute, second, 0, 0, -1)
             timestamp = time.mktime(struct)
 
-            print(f"Local time fetched successfully from World Time API")
-            system_log(f"Local time fetched successfully from World Time API")
             return {"struct_time": struct, "timestamp": timestamp, "offset": utc_offset}
 
         except Exception as e:
-            print(f"Attempt {attempt} to sync clock failed: {e}")
             system_log(f"Attempt {attempt} to sync clock failed: {e}")
-            
             if attempt < retries:
                 await asyncio.sleep(delay)
                 delay *= 2
             else:
-                # Zeroed Unix timestamp as a last resort
-                print(f"World Time API failed. Returning default time")
-                system_log(f"World Time API failed. Returning default time")
+                # Return default time
                 struct = (1970, 1, 1, 0, 0, 0, 3, 1, 0)
                 timestamp = time.mktime(struct)
                 return {"struct_time": struct, "timestamp": timestamp, "offset": "+00:00"}
-            
+
         finally:
             if response:
                 response.close()
