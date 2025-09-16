@@ -45,11 +45,20 @@ async def start_clock_sync(api_retries=3, delay=0.2):
     Sync Pi RTC at startup.
     """
     t = await get_local_time(state.timezone)
-    struct = t["struct_time"][:8]  # ignore any extra values
+    struct = t["struct_time"][:8]
 
     rtc = machine.RTC()
     rtc.datetime(tuple(int(x) for x in struct))
     state.rtc = rtc
+    
+    year, month, day, *_ = state.rtc.datetime()
+    date = f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
+    
+    if year == 1970:
+        print("Clock sync returned default date")
+        system_log("Clock sync returned default date")
+        state.add_error("start_clock_sync")
+        return rtc
 
     print("Clock synced at startup")
     system_log("Clock synced at startup")
@@ -91,7 +100,6 @@ async def start_weather_data(api_retries=3):
             data = get_weather_data(api_url)
             year, month, day, *_ = state.rtc.datetime()
             date = f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
-
             if data is None:
                 raise ValueError("Weather API returned no data")
 

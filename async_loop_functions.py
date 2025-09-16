@@ -11,6 +11,7 @@ from led import red_led_on, red_led_off, green_led_on, green_led_off
 from logging import system_log, log
 from motors import move_roof
 from sensors import sensor
+from stats import average, low, high
 from utils import get_local_time, seconds_until
 from weather import (
     get_weather_data,
@@ -29,11 +30,60 @@ from screen import (
 )
 import state
 
-
-async def sensor_log(record_interval, cloud_upload_interval, csv_complete, actuator_update):
-    """Call Sensor function to read current sensor values. Write current values to logs"""
+async def goodnight_routine(goodnight):
     while True:
-        for _ in range(cloud_upload_interval):
+        await goodnight.wait()
+        goodnight.clear()
+        try:
+            current_timestamp = time.mktime(time.localtime())
+            local_tm = time.localtime(current_timestamp)
+            year, month, day, *_ = local_tm
+            current_date = f"{year:04d}-{month:02d}-{day:02d}"
+
+            if state.is_night and current_date != state.last_goodnight_date:
+                state.roof_open = 0
+                state.fan_on = False
+                goodnight_message()
+                state.last_goodnight_date = current_date
+
+            state.clear_error("goodnight_routine")
+
+        except Exception as e:
+            print(f"Goodnight routine error: {e}")
+            system_log(f"Goodnight routine error: {e}")
+            state.add_error("goodnight_routine")
+            # optional: short sleep to prevent tight error loop
+            await asyncio.sleep(1)
+
+async def temperature_alert(temp_alert, goodnight):
+    while True:
+        await temp_alert.wait()
+        temp_alert.clear()
+
+        try:
+            if state.temp_celc_current is not None:
+                if state.temp_celc_current > 30:  # High temperature threshold
+                    print(f"High temperature alert! {state.temp_celc_current}°C")
+                    system_log(f"High temperature alert! {state.temp_celc_current}°C")
+                    await high_temp_alert(state.temp_celc_current)
+                elif state.temp_celc_current < 5:  # Low temperature threshold
+                    print(f"Low temperature warning! {state.temp_celc_current}°C")
+                    system_log(f"Low temperature warning! {state.temp_celc_current}°C")
+            
+            # Clear error if everything went fine
+            state.clear_error("temperature_alert")
+
+        except Exception as e:
+            print(f"Temperature alert failed: {e}")
+            system_log(f"Temperature alert failed: {e}")
+            state.add_error("temperature_alert")
+
+        await asyncio.sleep(1)
+
+
+async def sensor_log(csv_complete, actuator_update):
+    while True:
+        for _ in range(state.cloud_upload_interval):
             try:
                 (
                     state.temp_celc_current,
@@ -53,16 +103,42 @@ async def sensor_log(record_interval, cloud_upload_interval, csv_complete, actua
                     state.cover_on,
                     state.is_night,
                 )
+                state.clear_error("sensor_log")
             except Exception as e:
-                print("Sensor log error (sensor log):", e)
+                print("Sensor log error:", e)
                 system_log(f"Sensor log error: {e}")
-            await asyncio.sleep(record_interval)
+                state.add_error("sensor_log")
+            await asyncio.sleep(state.record_interval)
 
         csv_complete.set()
 
 
+async def cloud_upload(csv_complete, actuator_update):
+    while True:
+        await csv_complete.wait()
+        try:
+            print("Uploading CSV to cloud...")
+            system_log("Uploading CSV to cloud...")
+            
+            # Simulate the upload process here
+        
+            
+            # Clear CSV complete event and set actuator update event
+            csv_complete.clear()
+            actuator_update.set()
+
+            # Clear any previous errors for cloud_upload
+            state.clear_error("cloud_upload")
+
+        except Exception as e:
+            print(f"Cloud upload failed: {e}")
+            system_log(f"Cloud upload failed: {e}")
+            state.add_error("cloud_upload")
+
+        await asyncio.sleep(1)
+
+
 async def temp_inside_display(display, button_a, button_b, button_x, button_y, BG, WHITE, ORANGE):
-    """If button A pressed, show temp_inside screen. Refresh temp every 10s until another button pressed."""
     while True:
         if button_a.read():
             while button_a.read():
@@ -76,9 +152,9 @@ async def temp_inside_display(display, button_a, button_b, button_x, button_y, B
                     WHITE,
                     ORANGE,
                     state.temp_celc_current,
-                    25,
-                    18,
-                    27,
+                    state.temp_celc_average,
+                    state.temp_celc_low,
+                    state.temp_celc_high,
                 )
 
                 exit_pressed = False
@@ -98,7 +174,6 @@ async def temp_inside_display(display, button_a, button_b, button_x, button_y, B
 
 
 async def temp_outside_display(display, button_a, button_b, button_x, button_y, BG, WHITE, ORANGE):
-    """If button B pressed, show temp_outside screen. Refresh temp every 10s until another button pressed."""
     while True:
         if button_b.read():
             while button_b.read():
@@ -112,9 +187,9 @@ async def temp_outside_display(display, button_a, button_b, button_x, button_y, 
                     WHITE,
                     ORANGE,
                     state.temp_celc_outside_current,
-                    25,
-                    14,
-                    27,
+                    state.temp_celc_outside_average,
+                    state.temp_celc_outside_low,
+                    state.temp_celc_outside_high,
                 )
 
                 exit_pressed = False
@@ -129,13 +204,11 @@ async def temp_outside_display(display, button_a, button_b, button_x, button_y, 
 
                 if exit_pressed:
                     break
-
         else:
             await asyncio.sleep(0.1)
 
 
 async def humidity_display(display, button_a, button_b, button_x, button_y, BG, WHITE, ORANGE):
-    """If button X pressed, show humidity screen. Refresh every 10s until another button pressed."""
     while True:
         if button_x.read():
             while button_x.read():
@@ -149,9 +222,9 @@ async def humidity_display(display, button_a, button_b, button_x, button_y, BG, 
                     WHITE,
                     ORANGE,
                     state.rh_current,
-                    60,
-                    55,
-                    40,
+                    state.rh_average,
+                    state.rh_low,
+                    state.rh_high,
                 )
 
                 exit_pressed = False
@@ -166,15 +239,11 @@ async def humidity_display(display, button_a, button_b, button_x, button_y, BG, 
 
                 if exit_pressed:
                     break
-
         else:
             await asyncio.sleep(0.1)
 
 
 async def actuations_display(display, button_a, button_b, button_x, button_y, BG, WHITE, ORANGE):
-    """If button Y pressed, show actuations screen. Refresh every 10s until another button pressed."""
-    error_count = 2
-
     while True:
         if button_y.read():
             while button_y.read():
@@ -182,6 +251,7 @@ async def actuations_display(display, button_a, button_b, button_x, button_y, BG
             await asyncio.sleep(0.05)
 
             while True:
+                error_count = state.error_total()
                 await screen_actuations(
                     display,
                     BG,
@@ -205,23 +275,11 @@ async def actuations_display(display, button_a, button_b, button_x, button_y, BG
 
                 if exit_pressed:
                     break
-
         else:
             await asyncio.sleep(0.1)
 
 
-async def cloud_upload(csv_complete, actuator_update):
-    """Upload past 24 hours of log data to the cloud. Delete data successfully uploaded from the logs."""
-    while True:
-        await csv_complete.wait()
-        print("Uploading CSV to cloud...")
-        system_log("Uploading CSV to cloud...")
-        csv_complete.clear()
-        actuator_update.set()
-
-
 async def actuators(actuator_update, temp_alert):
-    """Compare sensor values to state and actuate devices accordingly."""
     temp_setpoint_low = 15
     temp_setpoint_high = 25
     rh_setpoint_low = 40
@@ -249,10 +307,11 @@ async def actuators(actuator_update, temp_alert):
                 state.lux_current,
                 moisture_current,
             ) = await sensor()
-
+            state.clear_error("actuators")
         except Exception as e:
             print("Sensor log error (actuation):", e)
             system_log(f"Sensor log error (actuation): {e}")
+            state.add_error("actuators")
 
         (
             prev_temp,
@@ -305,9 +364,6 @@ async def actuators(actuator_update, temp_alert):
 
 
 async def weather_check():
-    """Update weather data once per day at 3 AM and store safely in state.py"""
-
-    # Sleep until 3 AM first time
     await asyncio.sleep(seconds_until(3))
 
     while True:
@@ -319,11 +375,8 @@ async def weather_check():
             date = "{:04d}-{:02d}-{:02d}".format(year, month, day)
 
             if data:
-                # Sunrise hour as str
                 state.sunrise_hour = str(get_sunrise_hour(data))
-                # Sunrise time as string (HH:MM)
                 state.sunrise_time = get_sunrise_time(data)
-                # Temperature at sunrise as float
                 temp_at_sunrise = get_temperature_at_hour(data, state.sunrise_hour)
                 state.temp_at_sunrise = float(temp_at_sunrise) if temp_at_sunrise is not None else None
 
@@ -336,11 +389,8 @@ async def weather_check():
                         f"Weather data acquired. Sunrise is at {state.sunrise_time} on {date}. "
                         f"Temperature at sunrise is {state.temp_at_sunrise}°C"
                     )
-
-                    # Send weather message
                     weather_message(15, state.temp_at_sunrise)
 
-                    # Sunset timestamp as int
                     sunset_timestamp = get_sunset_time(data)
                     state.sunset_time = int(sunset_timestamp) if sunset_timestamp is not None else None
 
@@ -349,94 +399,69 @@ async def weather_check():
                         year, month, day, hour, minute, second, weekday, yearday = sunset_struct
                         system_log(f"Sunset time is {hour}:{minute} on {date}")
 
+                state.clear_error("weather_check")
             else:
                 print("Weather API failed; retrying in 60 seconds")
                 system_log("Weather API failed; retrying in 60 seconds")
+                state.add_error("weather_check")
 
         except Exception as e:
             print(f"Weather check error: {e}")
             system_log(f"Weather check error: {e}")
+            state.add_error("weather_check")
 
-        # Sleep until 3 AM next day
         await asyncio.sleep(seconds_until(3))
 
 
-async def temperature_alert(temp_alert, goodnight):
-    while True:
-        await temp_alert.wait()
-        temp_alert.clear()
-
-        high_temp_alert(
-            state.temp_celc_current,
-            state.temp_celc_outside_current,
-            state.roof_open,
-            state.fan_on,
-        )
-        goodnight.set()
-
-
-async def goodnight_routine(goodnight):
-    while True:
-        await goodnight.wait()
-        goodnight.clear()
-
-        current_timestamp = time.mktime(time.localtime())
-        local_tm = time.localtime(current_timestamp)
-        year, month, day, *_ = local_tm
-        current_date = f"{year:04d}-{month:02d}-{day:02d}"
-
-        if state.is_night and current_date != state.last_goodnight_date:
-            state.roof_open = 0
-            state.fan_on = False
-            goodnight_message()
-            state.last_goodnight_date = current_date
-
-
 async def cover_check(i2c):
-    """Runs independently to keep is_night and cover_on up-to-date."""
     ltr = BreakoutLTR559(i2c)
-
     prev_is_night = None
     prev_cover_on = None
 
     while True:
-        lux_records = []
-        for _ in range(4):
-            try:
-                (
-                    state.temp_celc_current,
-                    state.rh_current,
-                    state.temp_celc_outside_current,
-                    lux,
-                    moisture_value,
-                ) = await sensor()
-                lux_records.append(lux)
-                await asyncio.sleep(1)
-            except Exception as e:
-                print("Lux sensor log error:", e)
-                system_log(f"Lux sensor log error: {e}")
+        try:
+            lux_records = []
+            for _ in range(4):
+                try:
+                    (
+                        state.temp_celc_current,
+                        state.rh_current,
+                        state.temp_celc_outside_current,
+                        lux,
+                        moisture_value,
+                    ) = await sensor()
+                    lux_records.append(lux)
+                    await asyncio.sleep(1)
+                    state.clear_error("cover_check")
+                except Exception as e:
+                    print("Lux sensor log error:", e)
+                    system_log(f"Lux sensor log error: {e}")
+                    state.add_error("cover_check")
 
-        dark = sum(lux_records) == 0
-        current_timestamp = time.mktime(time.localtime())
+            dark = sum(lux_records) == 0
+            current_timestamp = time.mktime(time.localtime())
 
-        new_is_night = (current_timestamp > state.sunset_time) if state.sunset_time else dark
-        new_cover_on = dark and not new_is_night
+            new_is_night = (current_timestamp > state.sunset_time) if state.sunset_time else dark
+            new_cover_on = dark and not new_is_night
 
-        if new_is_night != prev_is_night:
-            prev_is_night = new_is_night
+            if new_is_night != prev_is_night:
+                prev_is_night = new_is_night
 
-        if new_cover_on != prev_cover_on:
-            prev_cover_on = new_cover_on
+            if new_cover_on != prev_cover_on:
+                prev_cover_on = new_cover_on
 
-        state.is_night = new_is_night
-        state.cover_on = new_cover_on
+            state.is_night = new_is_night
+            state.cover_on = new_cover_on
+
+        except Exception as e:
+            print(f"Cover check failed: {e}")
+            system_log(f"Cover check failed: {e}")
+            state.add_error("cover_check")
 
         await asyncio.sleep(30)
 
+
 async def clock_sync():
-    """
-    Daily RTC sync routine at 3am.
-    """
     seconds_until_3am = seconds_until(3)
     await asyncio.sleep(seconds_until_3am)
 
@@ -444,8 +469,6 @@ async def clock_sync():
         try:
             t = await get_local_time(state.timezone)
             struct_raw = t["struct_time"]
-
-            # Ensure all are integers
             struct = tuple(int(x) for x in struct_raw[:6]) + (0, 0, -1)
 
             if not hasattr(state, "rtc") or state.rtc is None:
@@ -458,14 +481,41 @@ async def clock_sync():
 
             print("Clock synced")
             system_log("Clock synced")
+            state.clear_error("clock_sync")
+            state.clear_error("start_clock_sync")
 
         except Exception as e:
             print("Clock sync failed:", e)
             system_log(f"Clock sync failed: {e}")
+            state.add_error("clock_sync")
 
         seconds_until_3am = seconds_until(3)
         await asyncio.sleep(seconds_until_3am)
 
+
+async def stats_check():
+    while True:
+        try:
+            state.temp_celc_average = average("temp_celc")
+            state.temp_celc_outside_average = average("temp_celc_outside")
+            state.rh_average = average("rh")
+
+            state.temp_celc_low = low("temp_celc")
+            state.temp_celc_outside_low = low("temp_celc_outside")
+            state.rh_low = low("rh")
+
+            state.temp_celc_high = high("temp_celc")
+            state.temp_celc_outside_high = high("temp_celc_outside")
+            state.rh_high = high("rh")
+
+            state.clear_error("stats_check")
+        except Exception as e:
+            print("Stats calcs failed:", e)
+            system_log(f"Stats calcs failed: {e}")
+            state.add_error("stats_check")
+
+        await asyncio.sleep(10)
+        
 
 async def wifi_watch(ssid, password, check_interval=10):
     """Periodically checks Wi-Fi connection and reconnects if dropped."""
@@ -473,20 +523,31 @@ async def wifi_watch(ssid, password, check_interval=10):
     wlan.active(True)
 
     while True:
-        if not wlan.isconnected():
-            print("Wi-Fi disconnected. Attempting reconnect...")
-            system_log("Wi-Fi disconnected. Attempting reconnect...")
-            wlan.connect(ssid, password)
+        try:
+            if not wlan.isconnected():
+                print("Wi-Fi disconnected. Attempting reconnect...")
+                system_log("Wi-Fi disconnected. Attempting reconnect...")
+                wlan.connect(ssid, password)
 
-            retry_count = 0
-            while not wlan.isconnected() and retry_count < 5:
-                await asyncio.sleep(2)
-                retry_count += 1
+                retry_count = 0
+                while not wlan.isconnected() and retry_count < 5:
+                    await asyncio.sleep(2)
+                    retry_count += 1
 
-            if wlan.isconnected():
-                print("Wi-Fi reconnected")
-                system_log("Wi-Fi reconnected")
-            else:
-                print("Wi-Fi reconnect failed")
-                system_log("Wi-Fi reconnect failed")
+                if wlan.isconnected():
+                    print("Wi-Fi reconnected")
+                    system_log("Wi-Fi reconnected")
+                else:
+                    print("Wi-Fi reconnect failed")
+                    system_log("Wi-Fi reconnect failed")
+
+            # Clear any previous errors for Wi-Fi
+            state.clear_error("wifi_watch")
+
+        except Exception as e:
+            print(f"Wi-Fi watch error: {e}")
+            system_log(f"Wi-Fi watch error: {e}")
+            state.add_error("wifi_watch")
+
         await asyncio.sleep(check_interval)
+

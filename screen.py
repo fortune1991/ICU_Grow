@@ -3,6 +3,18 @@ import time
 import math
 from picographics import PicoGraphics, DISPLAY_PICO_EXPLORER
 
+def fmt_degrees(value):
+        try:
+            return f"{value:.1f}°C"
+        except (TypeError, ValueError):
+            return "N/A"
+
+def fmt_percent(value):
+        try:
+            return f"{value:.0f}%"
+        except (TypeError, ValueError):
+            return "N/A"
+
 async def title(display, BG, GREEN):
     """
     Animated flower growth screen.
@@ -32,6 +44,34 @@ def clear_animation_area(display, BG, top_y=40):
     display.rectangle(0, top_y, width, height - top_y)
     display.update()
     
+async def menu(display, BG, WHITE, ORANGE):
+    clear_animation_area(display, BG)
+    # Title
+    display.set_pen(WHITE)
+    display.text("Menu", 40, 45, 200, 3)
+    # A button
+    display.set_pen(ORANGE)
+    display.text(f"Press A for: ", 40, 75, 200, 2)
+    display.set_pen(WHITE)
+    display.text(f"Temperature (inside)", 40, 90, 200, 2)
+    # B button
+    display.set_pen(ORANGE)
+    display.text(f"Press B for: ", 40, 120, 200, 2)
+    display.set_pen(WHITE)
+    display.text(f"Temperature (outside)", 40, 135, 200, 2)
+    # X button
+    display.set_pen(ORANGE)
+    display.text(f"Press X for: ", 40, 165, 200, 2)
+    display.set_pen(WHITE)
+    display.text(f"Humidity", 40, 180, 200, 2)
+    # Y button
+    display.set_pen(ORANGE)
+    display.text(f"Press Y for: ", 40, 195, 200, 2)
+    display.set_pen(WHITE)
+    display.text(f"Actuations and Errors", 40, 210, 200, 2)
+    
+    display.update()
+    await asyncio.sleep(0.5)
     
     
 async def start_screen(display, screen_running, BG, STEM, LEAF, BUD_BASE, PETALS, CENTER, GREEN):
@@ -177,28 +217,28 @@ async def screen_temperature_inside(display, BG, WHITE, ORANGE, temp_celc_curren
     display.text("Temperature (Inside)", 40, 50, 200, 3)
     # Current label
     display.set_pen(ORANGE)
-    display.text(f"Current: ", 40, 125, 200, 2)
+    display.text(f"Current: ", 40, 105, 200, 2)
     # Current value
     display.set_pen(WHITE)
-    display.text(f"{temp_celc_current}°C", 132, 125, 200, 2)
+    display.text(fmt_degrees(temp_celc_current), 132, 105, 200, 2)
     # Average label
     display.set_pen(ORANGE)
-    display.text(f"Average: ", 40, 150, 200, 2)
+    display.text(f"Average: ", 40, 130, 200, 2)
     # Average value
     display.set_pen(WHITE)
-    display.text(f"{temp_celc_average}°C", 132, 150, 200, 2)
+    display.text(fmt_degrees(temp_celc_average), 132, 130, 200, 2)
     # Low label
     display.set_pen(ORANGE)
-    display.text(f"Low: ", 40, 175, 200, 2)
+    display.text(f"Low: ", 40, 155, 200, 2)
     # Low value
     display.set_pen(WHITE)
-    display.text(f"{temp_celc_low}°C", 90, 175, 200, 2)
+    display.text(fmt_degrees(temp_celc_low), 90, 155, 200, 2)
     # High label
     display.set_pen(ORANGE)
-    display.text(f"High: ", 40, 200, 200, 2)
+    display.text(f"High: ", 40, 180, 200, 2)
     # High value
     display.set_pen(WHITE)
-    display.text(f"{temp_celc_high}°C", 90, 200, 200, 2)
+    display.text(fmt_degrees(temp_celc_high), 90, 180, 200, 2)
     
     display.update()
     await asyncio.sleep(0.5)
@@ -211,28 +251,28 @@ async def screen_temperature_outside(display, BG, WHITE, ORANGE, temp_celc_outsi
     display.text("Temperature (Outside)", 40, 50, 200, 3)
     # Current label
     display.set_pen(ORANGE)
-    display.text(f"Current: ", 40, 125, 200, 2)
+    display.text(f"Current: ", 40, 105, 200, 2)
     # Current value
     display.set_pen(WHITE)
-    display.text(f"{temp_celc_outside_current}°C", 132, 125, 200, 2)
+    display.text(fmt_degrees(temp_celc_outside_current), 132, 105, 200, 2)
     # Average label
     display.set_pen(ORANGE)
-    display.text(f"Average: ", 40, 150, 200, 2)
+    display.text(f"Average: ", 40, 130, 200, 2)
     # Average value
     display.set_pen(WHITE)
-    display.text(f"{temp_celc_outside_average}°C", 132, 150, 200, 2)
+    display.text(fmt_degrees(temp_celc_outside_average), 132, 130, 200, 2)
     # Low label
     display.set_pen(ORANGE)
-    display.text(f"Low: ", 40, 175, 200, 2)
+    display.text(f"Low: ", 40, 155, 200, 2)
     # Low value
     display.set_pen(WHITE)
-    display.text(f"{temp_celc_outside_low}°C", 90, 175, 200, 2)
+    display.text(fmt_degrees(temp_celc_outside_low), 90, 155, 200, 2)
     # High label
     display.set_pen(ORANGE)
-    display.text(f"High: ", 40, 200, 200, 2)
+    display.text(f"High: ", 40, 180, 200, 2)
     # High value
     display.set_pen(WHITE)
-    display.text(f"{temp_celc_outside_high}°C", 90, 200, 200, 2)
+    display.text(fmt_degrees(temp_celc_outside_high), 90, 180, 200, 2)
     
     display.update()
     await asyncio.sleep(0.5)
@@ -244,28 +284,28 @@ async def screen_humidity(display, BG, WHITE, ORANGE, rh_current, rh_average, rh
     display.text("Humidity (Inside)", 40, 50, 200, 3)
     # Current label
     display.set_pen(ORANGE)
-    display.text(f"Current: ", 40, 125, 200, 2)
+    display.text(f"Current: ", 40, 105, 200, 2)
     # Current value
     display.set_pen(WHITE)
-    display.text(f"{rh_current}%", 132, 125, 200, 2)
+    display.text(fmt_percent(rh_current), 132, 105, 200, 2)
     # Average label
     display.set_pen(ORANGE)
-    display.text(f"Average: ", 40, 150, 200, 2)
+    display.text(f"Average: ", 40, 130, 200, 2)
     # Average value
     display.set_pen(WHITE)
-    display.text(f"{rh_average}%", 132, 150, 200, 2)
+    display.text(fmt_percent(rh_average), 132, 130, 200, 2)
     # Low label
     display.set_pen(ORANGE)
-    display.text(f"Low: ", 40, 175, 200, 2)
+    display.text(f"Low: ", 40, 155, 200, 2)
     # Low value
     display.set_pen(WHITE)
-    display.text(f"{rh_low}%", 90, 175, 200, 2)
+    display.text(fmt_percent(rh_low), 90, 155, 200, 2)
     # High label
     display.set_pen(ORANGE)
-    display.text(f"High: ", 40, 200, 200, 2)
+    display.text(f"High: ", 40, 180, 200, 2)
     # High value
     display.set_pen(WHITE)
-    display.text(f"{rh_high}%", 90, 200, 200, 2)
+    display.text(fmt_percent(rh_high), 90, 180, 200, 2)
     
     display.update()
     await asyncio.sleep(0.5)
@@ -278,35 +318,36 @@ async def screen_actuations(display, BG, WHITE, ORANGE, fan_on, roof_open, heat_
     display.text("Actuations and Errors", 40, 50, 200, 3)
     # Fan label
     display.set_pen(ORANGE)
-    display.text(f"Fan: ", 40, 125, 200, 2)
+    display.text(f"Fan: ", 40, 105, 200, 2)
     # Fan value
     display.set_pen(WHITE)
-    display.text(f"{'on' if fan_on else 'off'}", 84, 125, 200, 2)
+    display.text(f"{'on' if fan_on else 'off'}", 84, 105, 200, 2)
     # Roof label
     display.set_pen(ORANGE)
-    display.text(f"Roof Opening: ", 40, 150, 200, 2)
+    display.text(f"Roof Opening: ", 40, 130, 200, 2)
     # Roof value
     display.set_pen(WHITE)
-    display.text(f"{roof_open}%", 185, 150, 200, 2)
+    display.text(fmt_percent(roof_open), 185, 130, 200, 2)
     # Heating label
     display.set_pen(ORANGE)
-    display.text(f"Heating: ", 40, 175, 200, 2)
+    display.text(f"Heating: ", 40, 155, 200, 2)
     # Heating value
     display.set_pen(WHITE)
-    display.text(f"{'on' if heat_pad_on else 'off'}", 127, 175, 200, 2)
+    display.text(f"{'on' if heat_pad_on else 'off'}", 127, 155, 200, 2)
     # Error label
     display.set_pen(ORANGE)
-    display.text(f"Errors: ", 40, 200, 200, 2)
+    display.text(f"Errors: ", 40, 180, 200, 2)
     # Error value
     display.set_pen(WHITE)
-    display.text(f"{error_count}", 117, 200, 200, 2)
+    display.text(f"{error_count}", 117, 180, 200, 2)
     
     display.update() 
     await asyncio.sleep(0.5)
 
-"""
+
 # TESTING
 
+"""
 async def main():
     
     display = PicoGraphics(display=DISPLAY_PICO_EXPLORER)
@@ -323,11 +364,15 @@ async def main():
     RED = display.create_pen(255, 0, 0)
     ORANGE = display.create_pen(255, 165, 0)
     
-    await (title(display, BG, GREEN))
-    await screen_temperature_inside(display, BG, WHITE, ORANGE, 22, 25, 18, 27)
+    screen_running = asyncio.Event()
+    screen_running.set()
+    
+    await title(display, BG, GREEN)
+    await screen_temperature_inside(display, BG, WHITE, ORANGE, 25, 24, 18, 28)
 
 # Run the event loop
 asyncio.run(main())
 """
+
 
 

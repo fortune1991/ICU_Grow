@@ -15,6 +15,7 @@ from screen import (
     screen_temperature_outside,
     screen_humidity,
     screen_actuations,
+    menu,
 )
 
 from async_loop_functions import (
@@ -31,6 +32,7 @@ from async_loop_functions import (
     cover_check,
     clock_sync,
     wifi_watch,
+    stats_check
 )
 from async_startup_functions import (
     connect_wifi,
@@ -83,24 +85,7 @@ async def main():
         asyncio.create_task(
             start_screen(display, screen_running, BG, STEM, LEAF, BUD_BASE, PETALS, CENTER, GREEN)
         )
-
-        await asyncio.sleep(0.01)
-
-        # Define constants and state
-        state.record_interval = 5  #seconds
-        state.cloud_upload_interval = 5  #sensor reads
-        state.roof_open = 0
-        state.fan_on = False
-        state.irrigation_on = False
-        state.heat_pad_on = False
-        state.temp_celc_current = None
-        state.rh_current = None
-        state.temp_celc_outside_current = None
-        state.lux_current = None
-        state.last_goodnight_date = None
-        state.is_night = False
-        state.cover_on = False
-
+        
         # Wait for USB to become ready
         await asyncio.sleep(0.1)
         # Connect to Wi-Fi
@@ -130,15 +115,11 @@ async def main():
         # Start Success Message
         await start_up_success(display, BG, WHITE, GREEN)
         await asyncio.sleep(5)
-        await screen_temperature_inside(
+        await menu(
             display,
             BG,
             WHITE,
             ORANGE,
-            state.temp_celc_current,
-            25,  # average
-            18,  # low
-            27,  # high
         )
 
     except Exception as e:
@@ -159,7 +140,7 @@ async def main():
 
     # Start all tasks concurrently
     await asyncio.gather(
-        sensor_log(state.record_interval, state.cloud_upload_interval, csv_complete, actuator_update),
+        sensor_log(csv_complete, actuator_update),
         cloud_upload(csv_complete, actuator_update),
         actuators(actuator_update, temp_alert),
         weather_check(),
@@ -167,6 +148,7 @@ async def main():
         goodnight_routine(goodnight),
         clock_sync(),
         cover_check(i2c),
+        stats_check(),
         wifi_watch(SSID, PASSWORD),
         temp_inside_display(display, button_a, button_b, button_x, button_y, BG, WHITE, ORANGE),
         temp_outside_display(display, button_a, button_b, button_x, button_y, BG, WHITE, ORANGE),
@@ -176,14 +158,6 @@ async def main():
 
 # Run the whole program
 asyncio.run(main())
-
-
-# NEXT
-# Write functions to calculate averages for screen
-# write error_count function
-
-
-
 
 # Cloud Infrastructure:
 
