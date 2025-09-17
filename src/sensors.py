@@ -33,12 +33,12 @@ async def sensor():
     
     # EXTERNAL TEMP
     # read the external thermometer
-    #temp_celc_outside = get_external_temp(one_wire_sensor)
+    temp_celc_outside = await get_external_temp(one_wire_sensor)
     
     # read the Pi sensor
-    outside_temp_reading = pi_temp.read_u16() * temp_conversion_factor
+    #outside_temp_reading = pi_temp.read_u16() * temp_conversion_factor
     # Formula from the RP2040 datasheet:
-    temp_celc_outside = 27 - (outside_temp_reading - 0.706)/0.001721
+    #temp_celc_outside = 27 - (outside_temp_reading - 0.706)/0.001721
     
     # Moisture
     moisture_value = await get_moisture(moisture)
@@ -95,7 +95,7 @@ async def get_external_temp(one_wire_sensor, delay=0.1):
         return external_temp
     raise ValueError("External Temperature Sensor returned None") 
     
-async def get_moisture(moisture,delay=1.2):
+async def get_moisture(moisture,delay=1.5):
     # give it at least 1 second to count pulses
     await asyncio.sleep(delay)
     reading = moisture.read()

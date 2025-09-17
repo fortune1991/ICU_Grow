@@ -3,6 +3,7 @@
 # Constants
 record_interval = 5 
 cloud_upload_interval = 5
+water_me_threshold = 25
 
 # States
 roof_open = 0

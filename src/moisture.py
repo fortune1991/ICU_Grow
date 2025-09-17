@@ -29,3 +29,9 @@ class Moisture:
     def saturation(self):
         sat = (self.reading - self.dry_point) / (self.wet_point - self.dry_point)
         return max(0.0, min(1.0, sat))
+     
+def water_me(moisture_value, threshold):
+    """Sensor when dry = 31 Sensor when wet = 7"""
+    if moisture_value > threshold:
+        return True
+    

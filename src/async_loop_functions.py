@@ -9,6 +9,7 @@ from alerts import high_temp_alert, goodnight_message
 from breakout_ltr559 import BreakoutLTR559
 from led import red_led_on, red_led_off, green_led_on, green_led_off
 from logging import system_log, log
+from moisture import water_me
 from motors import move_roof
 from sensors import sensor
 from stats import average, low, high
@@ -348,6 +349,8 @@ async def actuators(actuator_update, temp_alert):
 
         move_roof(prev_roof, state.roof_open)
 
+        water_me = water_me(moisture_current, state.water_me_threshold)
+        
         if state.fan_on:
             green_led_on()
         else:
@@ -357,6 +360,11 @@ async def actuators(actuator_update, temp_alert):
             red_led_on()
         else:
             red_led_off()
+        
+        if water_me:
+            blue_led_on()
+        else:
+            blue_led_off()
 
         print(f"roof open: {state.roof_open}, fan on: {state.fan_on}, heat pad on: {state.heat_pad_on}")
         temp_alert.set()

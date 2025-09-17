@@ -44,6 +44,15 @@ def move_roof(prev_roof, roof_open):
         window_move(speed_direction, duration)
     else:
         system_log("Invalid inputs. Roof not actuated")
+      
+
+"""
+def main():
+    move_roof(33,0)
+    
+main()
+"""
+        
         
 
 # UP = 0.3, 0.4, 0.6 motor durations, speed 0.75

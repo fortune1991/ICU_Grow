@@ -55,8 +55,8 @@ async def start_clock_sync(api_retries=3, delay=0.2):
     date = f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
     
     if year == 1970:
-        print("Clock sync returned default date")
-        system_log("Clock sync returned default date")
+        print("Clock sync returned default time")
+        system_log("Clock sync returned default timer")
         state.add_error("start_clock_sync")
         return rtc
 
